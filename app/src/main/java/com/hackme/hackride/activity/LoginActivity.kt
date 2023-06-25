@@ -1,5 +1,6 @@
 package com.hackme.hackride.activity
 
+import android.app.AlertDialog
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -113,24 +114,15 @@ class LoginActivity : AppCompatActivity() {
     private fun checkLocation() {
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            val intent = Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-            startActivity(intent)
-
-            val channelId = "location_channel" // ID sesuai dengan saluran notifikasi Anda
-            val channelName = "Location Channel" // Nama saluran notifikasi Anda
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_DEFAULT)
-                notificationManager.createNotificationChannel(channel)
+            val alertDialog = AlertDialog.Builder(this)
+            alertDialog.setTitle("Activate Location Sensor")
+            alertDialog.setMessage("Please activate the location sensor to proceed")
+            alertDialog.setPositiveButton("OK") { _, _ ->
+                val intent = Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                startActivity(intent)
             }
-
-            val notification = NotificationCompat.Builder(this, channelId)
-                .setContentTitle("Activate Location Sensor")
-                .setContentText("Please activate the location sensor to proceed")
-                .setSmallIcon(R.drawable.ic_lokasidisable)
-                .build()
-
-            notificationManager.notify(0, notification)
+            alertDialog.setCancelable(false)
+            alertDialog.show()
         } else {
             signInUsers()
         }

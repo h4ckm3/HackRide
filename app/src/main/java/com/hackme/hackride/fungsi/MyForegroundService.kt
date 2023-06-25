@@ -77,6 +77,7 @@ class MyForegroundService : Service() {
         if (intent != null && intent.hasExtra("id_motor")) {
             idMotor = intent.getStringExtra("id_motor") ?: ""
             status = intent.getStringExtra("status") ?: ""
+            id_user = intent.getStringExtra("id_user") ?: ""
             if (status == "Pemilik"){
                 startForegroundService("HackRide is Running","Welcome Owner\n" +
                     "Safe state")

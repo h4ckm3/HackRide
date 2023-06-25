@@ -117,8 +117,8 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         motor()
         startClock()
         setupMapView()
-        if (ID_Motor != "" && status !=""){
-            startBackgroundService(ID_Motor,status)
+        if (ID_Motor != "" && status !=""&& Id_user !=""){
+            startBackgroundService(ID_Motor,status,Id_user)
         }
         if (savedInstanceState != null) {
             motorLatitude = savedInstanceState.getDouble("motorLatitude");
@@ -494,10 +494,11 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
 
 
     //baground taks
-    private fun startBackgroundService(idMotor: String, status: String) {
+    private fun startBackgroundService(idMotor: String, status: String, id_user:String) {
         val intent = Intent(this, MyForegroundService::class.java)
         intent.putExtra("id_motor", idMotor) // Contoh pengiriman data "id_motor"
         intent.putExtra("status", status) // Contoh pengiriman data "status"
+        intent.putExtra("id_user", id_user)
         ContextCompat.startForegroundService(this, intent)
 
     }

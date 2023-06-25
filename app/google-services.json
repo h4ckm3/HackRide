@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "830729997219",
+    "project_id": "hackridepkm",
+    "storage_bucket": "hackridepkm.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:830729997219:android:322aa0f5c12cb081f32816",
+        "android_client_info": {
+          "package_name": "com.hackme.hackride"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "830729997219-t947a8hfokgu18ogu9cn5kvpj2mo3sqt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hackme.hackride",
+            "certificate_hash": "efa7f829d53546c5bda5cf5c78e627a17488fe7b"
+          }
+        },
+        {
+          "client_id": "830729997219-u5btan3hskr7iba2jh2klfsrk1bmtbkd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLu8n_DoABlQv8blsWKnH0akcrO5d_zS8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "830729997219-u5btan3hskr7iba2jh2klfsrk1bmtbkd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

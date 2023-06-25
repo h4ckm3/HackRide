@@ -1,0 +1,12 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.HackRide" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">#03A9F4</item>
+        <item name="colorPrimaryDark">#2196F3</item>
+        <item name="colorAccent">#00BCD4</item>
+    </style>
+
+    <style name="Theme.HackRide" parent="Base.Theme.HackRide" />
+</resources>

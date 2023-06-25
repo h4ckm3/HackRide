@@ -25,6 +25,15 @@ import java.util.*
 
 class MyForegroundService : Service() {
 
+    private var latitudeMotor : Double = 0.0
+    private var longitudeMotor : Double = 0.0
+    private var mesinMotor: String = ""
+    private var inMesin : Int = 0
+    private var getaranMotor : Boolean = false
+    private var latPerkir : Double = 0.0
+    private var longParkir : Double =0.0
+
+
     private lateinit var database: DatabaseReference
     private var status:String =""
     private lateinit var motorLocation: Location
@@ -117,12 +126,23 @@ class MyForegroundService : Service() {
                     val latitude = dataSnapshot.child("latitude").getValue(Double::class.java)
                     val longitude = dataSnapshot.child("longitude").getValue(Double::class.java)
                     val mesin = dataSnapshot.child("mesin").getValue(Int::class.java)
+                    val getaran = dataSnapshot.child("getaran").getValue(Boolean::class.java)
                     val latitudeParkir = dataSnapshot.child("latitudeparkir").getValue(Double::class.java)
                     val longitudeParkir = dataSnapshot.child("longitudeparkir").getValue(Double::class.java)
 
-                    if (latitude != null && longitude != null && latitudeParkir != null && longitudeParkir != null && mesin != null) {
+                    if (latitude != null && longitude != null && latitudeParkir != null && longitudeParkir != null && mesin != null&& getaran != null) {
                         Log.d("Data Motor", "Latitude: $latitude, Longitude: $longitude, Mesin: $mesin, Latitude Parkir: $latitudeParkir, Longitude Parkir: $longitudeParkir")
-
+                        latitudeMotor = latitude
+                        longitudeMotor = longitude
+                        latPerkir = latitudeParkir
+                        longParkir = longitudeParkir
+                        getaranMotor = getaran
+                        inMesin = mesin
+                        if (mesin == 0){
+                            mesinMotor = "nonActive"
+                        }else{
+                            mesinMotor ="Active"
+                        }
                         compareDistanceToParking(latitude, longitude, latitudeParkir, longitudeParkir, mesin)
                     }
                 } else {
@@ -145,11 +165,12 @@ class MyForegroundService : Service() {
                     timerServis?.cancel()
                     return
                 }
-                getDataMotor(idMotor)
                 getUserLocation()
+                getDataMotor(idMotor)
+
             }
         }
-        timerServis?.schedule(timerTask, 0, 5000)
+        timerServis?.schedule(timerTask, 0, 3000)
     }
 
     private fun compareDistanceToParking(motorLat: Double, motorLng: Double, parkirLat: Double, parkirLng: Double, mesin: Int) {

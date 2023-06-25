@@ -98,6 +98,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
 
         btnLogout.setOnClickListener {
             logoutUser()
+            locationManager.removeUpdates(this)
             motorMarker?.onDestroy()
             marker?.onDestroy()
             mapView.onPause()
@@ -206,7 +207,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
     }
     override fun onStop() {
         super.onStop()
-        locationManager.removeUpdates(this)
+//        locationManager.removeUpdates(this)
         cancelClock()
     }
 
@@ -214,7 +215,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        locationManager.removeUpdates(this)
+//        locationManager.removeUpdates(this)
         mapView.onPause()
         motorMarker?.onDestroy()
         marker?.onDestroy()

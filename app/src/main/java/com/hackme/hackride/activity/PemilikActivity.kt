@@ -12,8 +12,11 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.view.View
+import android.widget.Button
+import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
@@ -25,6 +28,8 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.hackme.hackride.R
+import com.hackme.hackride.fungsi.MarkerMotor
+import com.hackme.hackride.fungsi.MarkerUser
 import com.hackme.hackride.fungsi.MyForegroundService
 import com.hackme.hackride.fungsi.calculateEuclideanDistance
 import org.osmdroid.config.Configuration
@@ -39,6 +44,12 @@ import java.util.Timer
 import java.util.TimerTask
 
 class PemilikActivity : AppCompatActivity(), LocationListener {
+
+    //konten linearlayoyt
+    private lateinit var kontenHome: LinearLayout
+    private lateinit var kontenAbout: LinearLayout
+    private lateinit var kontenHelp: LinearLayout
+
     private lateinit var btnLogout: CardView
     private lateinit var btnCVHome: CardView
     private lateinit var btnCVAbout: CardView
@@ -57,6 +68,8 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
     private var userLongitude: Double = 0.0
     private var motorLatitude: Double = 0.0
     private var motorLongitude: Double = 0.0
+    private var latParkir : Double = 0.0
+    private var longParkit : Double =0.0
     private var ID_Motor:String =""
     private var nama_pemilik:String =""
     private var jarakuser: String =""
@@ -66,6 +79,20 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
     private var timerMarker: Timer? = null
     private var Mesin : String =""
     private var Gtaran : Boolean = false
+
+    //tombol maps
+    private lateinit var btnFokusUser : CardView
+    private lateinit var btnFokusMotor : CardView
+
+    // notifikasi carview
+    //notifikasi kemalingan
+    private lateinit var notifKemalingan : CardView
+    private lateinit var btnLacakNotifKemalingan : Button
+    //notifikasi sensor lokasi
+    private lateinit var notiSensorLokasi : CardView
+    private lateinit var btn_Oknotifaktifkanlokasi : Button
+    private lateinit var btn_exitNotifikasilokasi :Button
+
 
 
 
@@ -78,6 +105,19 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         )
         mapView = findViewById(R.id.mapView)
         mapView.setTileSource(TileSourceFactory.DEFAULT_TILE_SOURCE)
+
+        //tombol pada maps
+        btnFokusUser = findViewById(R.id.cv_btnfokuspemilik)
+        btnFokusMotor = findViewById(R.id.cv_btnfokusmotor)
+
+        //notifikasi
+        //notifikasi kemalingan
+        notifKemalingan = findViewById(R.id.cv_notifikasikemailingan)
+        btnLacakNotifKemalingan = findViewById(R.id.btn_lacakkemalingan)
+        //notifikasi sensor lokasi
+        notiSensorLokasi = findViewById(R.id.cv_notifikasisensorlokasi)
+        btn_Oknotifaktifkanlokasi = findViewById(R.id.btn_aktifkanlokasi)
+        btn_exitNotifikasilokasi = findViewById(R.id.btn_tolakaktifkanlokasi)
 
         // Inisialisasi komponen lainnya
         btnLogout = findViewById(R.id.cv_btnlogout)
@@ -97,6 +137,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         // memulai maps
 
         btnLogout.setOnClickListener {
+            btnLogout()
             logoutUser()
             locationManager.removeUpdates(this)
             motorMarker?.onDestroy()
@@ -110,9 +151,14 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
             foregroundServiceInstance?.setLoggedOut()
             val serviceIntent = Intent(this, MyForegroundService::class.java)
             stopService(serviceIntent)
-            Intent(this, PemilikActivity::class.java).flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+            Intent(this, PemilikActivity::class.java).flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(Intent(this, LoginActivity::class.java))
+
         }
+        //inisialisasi mulai
+        setinganMulai()
+        datadarilogin()
+        getDataMotor(ID_Motor)
         btnHome()
         lokasiuser()
         motor()
@@ -127,11 +173,52 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
             userLatitude = savedInstanceState.getDouble("userLatitude")
             userLongitude = savedInstanceState.getDouble("userLongitude")
         }
+
+
+        // pemanggilan tombol maps
+        btnFokusUser.setOnClickListener {
+            btnFokusUser()
+        }
+        btnFokusMotor.setOnClickListener {
+            btnFokusMotor()
+        }
+
+        //tombol menu bar
+        btnCVHome.setOnClickListener{
+            btnHome()
+        }
+        btnCVAbout.setOnClickListener{
+            btnAbout()
+        }
+        btnCVHelp.setOnClickListener{
+            btnHelp()
+        }
+
+        //fungsi tombol notif
+        //tombolnotifikasi sensor lokasi
+        btn_Oknotifaktifkanlokasi.setOnClickListener{
+
+            val intent = Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+            startActivity(intent)
+            notiSensorLokasi.visibility = View.GONE
+            finishAffinity()
+        }
+        btn_exitNotifikasilokasi.setOnClickListener {
+            notiSensorLokasi.visibility = View.GONE
+            finishAffinity()
+        }
+
     }
 
 
     override fun onProviderDisabled(provider: String) {
        checkLocation()
+    }
+    override fun onProviderEnabled(provider: String) {
+        // Implementasi logika saat provider diaktifkan
+        setupMapView()
+        setupMapWithLocation()
+        notiSensorLokasi.visibility = View.GONE
     }
 
     override fun onRequestPermissionsResult(
@@ -191,6 +278,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
 
     override fun onResume() {
         super.onResume()
+        setupMapWithLocation()
         // Resume the map view when the activity is resumed
         mapView.onResume()
         motorMarker?.onResume()
@@ -200,9 +288,9 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
     override fun onPause() {
         super.onPause()
         // Pause the map view when the activity is paused
-        mapView.onPause()
-        motorMarker?.onPause()
-        marker?.onPause()
+//        mapView.onPause()
+//        motorMarker?.onPause()
+//        marker?.onPause()
         cancelClock()
     }
     override fun onStop() {
@@ -220,6 +308,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         motorMarker?.onDestroy()
         marker?.onDestroy()
         cancelClock()
+        Intent(this, PemilikActivity::class.java).flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
     }
 
 
@@ -234,17 +323,10 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
     private fun checkLocation() {
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            val alertDialog = AlertDialog.Builder(this)
-            alertDialog.setTitle("Activate Location Sensor")
-            alertDialog.setMessage("Please activate the location sensor to proceed")
-            alertDialog.setPositiveButton("OK") { _, _ ->
-                val intent = Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                startActivity(intent)
-            }
-            alertDialog.setCancelable(false)
-            alertDialog.show()
+            notiSensorLokasi.visibility = View.VISIBLE
         } else {
             setupMapWithLocation()
+            notiSensorLokasi.visibility = View.GONE
         }
     }
 
@@ -269,11 +351,13 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
                         }
                         motorLatitude = latitude
                         motorLongitude = longitude
+                        latParkir = latitudeParkir
+                        longParkit = longitudeParkir
                         markerUser(userLatitude,userLongitude)
                         addMotorMarker(motorLatitude,motorLongitude)
                         drawPolyline(motorLatitude,motorLongitude,userLatitude,userLongitude)
-                        val initialLocation = GeoPoint(motorLatitude, motorLongitude)
-                        mapView.controller.setCenter(initialLocation)
+//                        val initialLocation = GeoPoint(motorLatitude, motorLongitude)
+//                        mapView.controller.setCenter(initialLocation)
 
                     }
                     // Lakukan sesuatu dengan data yang telah diambil
@@ -340,8 +424,9 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         }
         mapView.addOnFirstLayoutListener { v, left, top, right, bottom ->
         motorMarker = Marker(mapView)}
+        val customMarker = MarkerMotor(this)
         motorMarker?.position = motorLocation
-        motorMarker?.icon = ContextCompat.getDrawable(this, R.drawable.ic_markermotor) // Ganti dengan ikon marker yang sesuai
+        motorMarker?.icon = customMarker.createMarker(ID_Motor)
         motorMarker?.title = "ID : $ID_Motor\nEngine : $Mesin\nVibration : $Gtaran\nDistance from you : $jarakuser"
 
         motorMarker?.let {
@@ -362,8 +447,9 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         // Create a new marker
         mapView.addOnFirstLayoutListener { v, left, top, right, bottom ->
         marker = Marker(mapView)}
+        val customMarker = MarkerUser(this)
         marker?.position = userLocation
-        marker?.icon = ContextCompat.getDrawable(this, R.drawable.ic_markerpemilik)
+        marker?.icon = customMarker.createMarker(nama_pemilik)
         marker?.title = "Status: $status\nName: $nama_pemilik\nHp : $noHp\n Distance from Bike : $jarakuser "
 
         // Add the marker overlay to the map
@@ -380,16 +466,28 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         mapView.setTileSource(TileSourceFactory.DEFAULT_TILE_SOURCE)
         mapView.setMultiTouchControls(true)
 
-        enableRotation()
         enableCompass()
         enableZoomControls()
         val rotationGestureOverlay = RotationGestureOverlay(mapView)
-        rotationGestureOverlay.isEnabled = true
+        rotationGestureOverlay.isEnabled = false // Nonaktifkan fitur rotasi
         mapView.overlays.add(rotationGestureOverlay)
-        val initialLocation = GeoPoint(0.0, 0.0)
+
+        val initialLocation = GeoPoint(motorLatitude, motorLongitude)
         mapView.controller.setCenter(initialLocation)
         mapView.controller.setZoom(19.0)
+
+        if (motorLatitude != 0.0 && motorLongitude != 0.0) {
+            if (!mapView.boundingBox.contains(motorLatitude, motorLongitude)) {
+                Handler().postDelayed({ setupMapView() }, 1000)
+            }else{
+                rotationGestureOverlay.isEnabled = true
+            }
+        } else {
+            Handler().postDelayed({ getDataMotor(ID_Motor) }, 1000)
+            Handler().postDelayed({ setupMapView() }, 1000)
+        }
     }
+
 
     private fun enableRotation() {
         mapView.setMapOrientation(0f) // Mengatur sudut rotasi ke 0 derajat untuk memulai
@@ -438,6 +536,8 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
                     jarakuser = bulatjarak.toString()
                     markerUser(userLatitude,userLongitude)
                     addMotorMarker(motorLatitude,motorLongitude)
+                    //panggil fungsi
+                    perikasKemalingan()
                 }
             }
         }, 0, 1000) // Menjalankan tugas setiap 1000 milidetik (1 detik)
@@ -470,6 +570,10 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
 
     //tampilan home,abaout,help
     private fun btnHome(){
+        kontenHome = findViewById(R.id.linlay_home)
+        kontenAbout = findViewById(R.id.linlay_about)
+        kontenHelp = findViewById(R.id.linlay_help)
+
         btnLogout = findViewById(R.id.cv_btnlogout)
         btnCVHome = findViewById(R.id.cv_btnhome)
         btnCVAbout = findViewById(R.id.cv_btnabout)
@@ -486,11 +590,154 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         btnCVHelp.setCardBackgroundColor(tidakklik)
         btnCVAbout.setCardBackgroundColor(tidakklik)
 
+        kontenHome.visibility = View.VISIBLE
+        kontenAbout.visibility = View.GONE
+        kontenHelp.visibility = View.GONE
+
         ketCvhome.visibility = View.VISIBLE
         ketCvabout.visibility = View.GONE
         ketCvhelp.visibility = View.GONE
 
 
+    }
+    private fun btnAbout(){
+        kontenHome = findViewById(R.id.linlay_home)
+        kontenAbout = findViewById(R.id.linlay_about)
+        kontenHelp = findViewById(R.id.linlay_help)
+
+        btnLogout = findViewById(R.id.cv_btnlogout)
+        btnCVHome = findViewById(R.id.cv_btnhome)
+        btnCVAbout = findViewById(R.id.cv_btnabout)
+        btnCVHelp = findViewById(R.id.cv_btnhelp)
+        ketCvhome = findViewById(R.id.cv_kethome)
+        ketCvabout = findViewById(R.id.cv_ketabout)
+        ketCvhelp = findViewById(R.id.cv_kethelp)
+        val warnaKlik = "#00BCD4" // Contoh warna merah
+        val klik = Color.parseColor(warnaKlik)
+        val warnaTidakKlik = "#FFFFFFFF"
+        val tidakklik = Color.parseColor(warnaTidakKlik)
+        btnLogout.setCardBackgroundColor(tidakklik)
+        btnCVHome.setCardBackgroundColor(tidakklik)
+        btnCVHelp.setCardBackgroundColor(tidakklik)
+        btnCVAbout.setCardBackgroundColor(klik)
+
+        kontenHome.visibility = View.GONE
+        kontenAbout.visibility = View.VISIBLE
+        kontenHelp.visibility = View.GONE
+
+        ketCvhome.visibility = View.GONE
+        ketCvabout.visibility = View.VISIBLE
+        ketCvhelp.visibility = View.GONE
+
+
+    }
+
+    private fun btnHelp(){
+        kontenHome = findViewById(R.id.linlay_home)
+        kontenAbout = findViewById(R.id.linlay_about)
+        kontenHelp = findViewById(R.id.linlay_help)
+
+        btnLogout = findViewById(R.id.cv_btnlogout)
+        btnCVHome = findViewById(R.id.cv_btnhome)
+        btnCVAbout = findViewById(R.id.cv_btnabout)
+        btnCVHelp = findViewById(R.id.cv_btnhelp)
+        ketCvhome = findViewById(R.id.cv_kethome)
+        ketCvabout = findViewById(R.id.cv_ketabout)
+        ketCvhelp = findViewById(R.id.cv_kethelp)
+        val warnaKlik = "#00BCD4" // Contoh warna merah
+        val klik = Color.parseColor(warnaKlik)
+        val warnaTidakKlik = "#FFFFFFFF"
+        val tidakklik = Color.parseColor(warnaTidakKlik)
+        btnLogout.setCardBackgroundColor(tidakklik)
+        btnCVHome.setCardBackgroundColor(tidakklik)
+        btnCVHelp.setCardBackgroundColor(klik)
+        btnCVAbout.setCardBackgroundColor(tidakklik)
+
+        kontenHome.visibility = View.GONE
+        kontenAbout.visibility = View.GONE
+        kontenHelp.visibility = View.VISIBLE
+
+        ketCvhome.visibility = View.GONE
+        ketCvabout.visibility = View.GONE
+        ketCvhelp.visibility = View.VISIBLE
+
+
+    }
+    private fun btnLogout(){
+        kontenHome = findViewById(R.id.linlay_home)
+        kontenAbout = findViewById(R.id.linlay_about)
+        kontenHelp = findViewById(R.id.linlay_help)
+
+        btnLogout = findViewById(R.id.cv_btnlogout)
+        btnCVHome = findViewById(R.id.cv_btnhome)
+        btnCVAbout = findViewById(R.id.cv_btnabout)
+        btnCVHelp = findViewById(R.id.cv_btnhelp)
+        ketCvhome = findViewById(R.id.cv_kethome)
+        ketCvabout = findViewById(R.id.cv_ketabout)
+        ketCvhelp = findViewById(R.id.cv_kethelp)
+        val warnaKlik = "#00BCD4" // Contoh warna merah
+        val klik = Color.parseColor(warnaKlik)
+        val warnaTidakKlik = "#FFFFFFFF"
+        val tidakklik = Color.parseColor(warnaTidakKlik)
+        btnLogout.setCardBackgroundColor(klik)
+        btnCVHome.setCardBackgroundColor(tidakklik)
+        btnCVHelp.setCardBackgroundColor(tidakklik)
+        btnCVAbout.setCardBackgroundColor(tidakklik)
+
+        ketCvhome.visibility = View.GONE
+        ketCvabout.visibility = View.GONE
+        ketCvhelp.visibility = View.GONE
+
+
+    }
+
+    //tombol maps fungsi
+    private fun btnFokusUser(){
+        val initialLocation = GeoPoint(userLatitude, userLongitude)
+        mapView.controller.setCenter(initialLocation)
+        mapView.controller.setZoom(22.0)
+        val rotationGestureOverlay = RotationGestureOverlay(mapView)
+        rotationGestureOverlay.isEnabled = false
+        if (!mapView.boundingBox.contains(userLatitude, userLongitude)) {
+            Handler().postDelayed({ btnFokusUser() }, 1000)
+        }else{
+            rotationGestureOverlay.isEnabled = true
+            marker?.showInfoWindow()
+        }
+    }
+    private fun btnFokusMotor(){
+        val initialLocation = GeoPoint(motorLatitude, motorLongitude)
+        mapView.controller.setCenter(initialLocation)
+        mapView.controller.setZoom(22.0)
+        val rotationGestureOverlay = RotationGestureOverlay(mapView)
+        rotationGestureOverlay.isEnabled = false
+        if (!mapView.boundingBox.contains(motorLatitude, motorLongitude)) {
+            Handler().postDelayed({ btnFokusMotor() }, 1000)
+        }else{
+            rotationGestureOverlay.isEnabled = true
+            motorMarker?.showInfoWindow()
+        }
+    }
+
+    //setingan ketika mulai
+    private fun setinganMulai(){
+        notifKemalingan.visibility = View.GONE
+        notiSensorLokasi.visibility = View.GONE
+    }
+
+
+    //Fungsi cek Kemalingan
+    private fun perikasKemalingan(){
+        val jarakAman = calculateEuclideanDistance(motorLatitude,motorLongitude,latParkir,longParkit)
+        if (Mesin == "Nonactive"){
+            if (jarakAman > 50){
+                notifKemalingan.visibility=View.VISIBLE
+            }else{
+                notifKemalingan.visibility=View.GONE
+            }
+        }else{
+            notifKemalingan.visibility=View.GONE
+        }
     }
 
 
@@ -505,20 +752,9 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
     }
 
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putDouble("motorLatitude", motorLatitude)
-        outState.putDouble("motorLongitude", motorLongitude)
-        outState.putDouble("userLatitude", userLatitude)
-        outState.putDouble("userLongitude", userLongitude)
-    }
-
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        motorLatitude = savedInstanceState.getDouble("motorLatitude")
-        motorLongitude = savedInstanceState.getDouble("motorLongitude")
-        userLatitude = savedInstanceState.getDouble("userLatitude")
-        userLongitude = savedInstanceState.getDouble("userLongitude")
+    override fun onBackPressed() {
+        super.onBackPressed()
+        finishAffinity() // Menutup semua aktivitas yang terkait dengan aktivitas saat ini
     }
 
 }

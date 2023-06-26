@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="150dp"
+    android:layout_height="157dp"
+    android:background="@drawable/ic_markerpemilik">
+
+    <TextView
+        android:id="@+id/tv_namauser"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="13dp"
+        android:layout_marginLeft="12dp"
+        android:text="Owner"
+        android:textColor="#009688"
+        android:maxLength="5"
+        android:textSize="8dp"
+        android:textStyle="bold"
+        tools:ignore="TextSizeCheck" />
+
+</LinearLayout>

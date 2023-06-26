@@ -50,7 +50,6 @@ class MyForegroundService : Service() {
     companion object {
         const val ACTION_STOP_LOCATION_COMPARISON = "com.hackme.hackride.STOP_LOCATION_COMPARISON"
         private var instance: MyForegroundService? = null
-
         fun getInstance(): MyForegroundService? {
             return instance
         }
@@ -88,14 +87,13 @@ class MyForegroundService : Service() {
             status = intent.getStringExtra("status") ?: ""
             id_user = intent.getStringExtra("id_user") ?: ""
             if (status == "Pemilik"){
-                startForegroundService("HackRide is Running","Welcome Owner\n" +
-                    "Safe state")
+                startForegroundService("HackRide is Running","Welcome Owner")
             }else{
-                startForegroundService("HackRide is Running","Welcome Officer\n" +
-                        "no case situation")
+                startForegroundService("HackRide is Running","Welcome Officer")
             }
 
             startLocationComparison()
+            startAmbildata()
             instance = this // Set instance MyForegroundService
         }
         return START_STICKY
@@ -143,7 +141,7 @@ class MyForegroundService : Service() {
                         }else{
                             mesinMotor ="Active"
                         }
-                        compareDistanceToParking(latitude, longitude, latitudeParkir, longitudeParkir, mesin)
+//                        compareDistanceToParking(latitude, longitude, latitudeParkir, longitudeParkir, mesin)
                     }
                 } else {
                     // Data motor dengan id_motor tersebut tidak ditemukan
@@ -165,13 +163,31 @@ class MyForegroundService : Service() {
                     timerServis?.cancel()
                     return
                 }
+//                getUserLocation()
+//                getDataMotor(idMotor)
+                compareDistanceToParking(latitudeMotor, longitudeMotor, latPerkir, longParkir, inMesin)
+
+            }
+        }
+        timerServis?.schedule(timerTask, 0, 5000)
+    }
+    private fun startAmbildata() {
+        timerData = Timer()
+        val timerTask = object : TimerTask() {
+            override fun run() {
+                if (isLoggedOut) {
+                    // Jika telah logout, batalkan pemanggilan getDataMotor() dan getUserLocation()
+                    timerData?.cancel()
+                    return
+                }
                 getUserLocation()
                 getDataMotor(idMotor)
 
             }
         }
-        timerServis?.schedule(timerTask, 0, 3000)
+        timerData?.schedule(timerTask, 0, 1000)
     }
+
 
     private fun compareDistanceToParking(motorLat: Double, motorLng: Double, parkirLat: Double, parkirLng: Double, mesin: Int) {
         val motorLocation = Location("Motor Location")
@@ -189,8 +205,7 @@ class MyForegroundService : Service() {
             if (distance > 50 && mesin == 0) {
                 showHeadsUpNotification("Beware of Detected Theft", "Distance from you $jarakUser m")
             }else{
-                startForegroundService("HackRide is Running","Welcome Owner\n" +
-                        "Safe state")
+                cancelNotification()
             }
         }
     }
@@ -221,8 +236,14 @@ class MyForegroundService : Service() {
             val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH)
             notificationManager.createNotificationChannel(channel)
         }
-        notificationManager.notify(1, notificationBuilder.build())
+        notificationManager.notify(2, notificationBuilder.build())
     }
+
+    private fun cancelNotification() {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(2)
+    }
+
 
 
     private fun getFullScreenIntent(): PendingIntent? {

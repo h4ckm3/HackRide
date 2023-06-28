@@ -137,6 +137,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         // memulai maps
 
         btnLogout.setOnClickListener {
+            hapusDataPemilik()
             btnLogout()
             logoutUser()
             locationManager.removeUpdates(this)
@@ -449,7 +450,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         marker = Marker(mapView)}
         val customMarker = MarkerUser(this)
         marker?.position = userLocation
-        marker?.icon = customMarker.createMarker(nama_pemilik)
+        marker?.icon = customMarker.createMarker(nama_pemilik,R.drawable.ic_markerpemilik)
         marker?.title = "Status: $status\nName: $nama_pemilik\nHp : $noHp\n Distance from Bike : $jarakuser "
 
         // Add the marker overlay to the map
@@ -693,9 +694,10 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
 
     //tombol maps fungsi
     private fun btnFokusUser(){
+        markerUser(userLatitude,userLongitude)
         val initialLocation = GeoPoint(userLatitude, userLongitude)
         mapView.controller.setCenter(initialLocation)
-        mapView.controller.setZoom(22.0)
+        mapView.controller.setZoom(20.0)
         val rotationGestureOverlay = RotationGestureOverlay(mapView)
         rotationGestureOverlay.isEnabled = false
         if (!mapView.boundingBox.contains(userLatitude, userLongitude)) {
@@ -706,9 +708,10 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         }
     }
     private fun btnFokusMotor(){
+        addMotorMarker(motorLatitude,motorLongitude)
         val initialLocation = GeoPoint(motorLatitude, motorLongitude)
         mapView.controller.setCenter(initialLocation)
-        mapView.controller.setZoom(22.0)
+        mapView.controller.setZoom(20.0)
         val rotationGestureOverlay = RotationGestureOverlay(mapView)
         rotationGestureOverlay.isEnabled = false
         if (!mapView.boundingBox.contains(motorLatitude, motorLongitude)) {
@@ -755,6 +758,19 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
     override fun onBackPressed() {
         super.onBackPressed()
         finishAffinity() // Menutup semua aktivitas yang terkait dengan aktivitas saat ini
+    }
+
+    //databases fungsi
+    private fun hapusDataPemilik(){
+        // Mendapatkan instance dari SharedPreferences
+        val sharedPreferences = getSharedPreferences("UserData", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.remove("userId")
+        editor.remove("type")
+        editor.remove("nama")
+        editor.remove("hp")
+        editor.remove("id_motor")
+        editor.apply()
     }
 
 }

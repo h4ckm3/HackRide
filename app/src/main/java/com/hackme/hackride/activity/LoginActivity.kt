@@ -1,8 +1,5 @@
 package com.hackme.hackride.activity
 
-import android.app.AlertDialog
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -19,7 +16,12 @@ import com.google.firebase.database.ValueEventListener
 import com.hackme.hackride.R
 import com.hackme.hackride.database.User
 import android.location.LocationManager
-import androidx.core.app.NotificationCompat
+import android.view.inputmethod.InputMethodManager
+import android.widget.Toast
+import com.google.firebase.FirebaseError.ERROR_INVALID_EMAIL
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.hackme.hackride.database.AparatData
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var Fauth: FirebaseAuth
@@ -40,6 +42,7 @@ class LoginActivity : AppCompatActivity() {
         etPassword = findViewById(R.id.et_password)
 
         btnLogin.setOnClickListener {
+            closeKeyboard()
             checkLocation()
         }
     }
@@ -48,10 +51,17 @@ class LoginActivity : AppCompatActivity() {
         val email = etEmail.text.toString().trim()
         val password = etPassword.text.toString().trim()
 
-        if (email.isEmpty() || password.isEmpty()) {
-            // Validasi jika kolom email atau kata sandi kosong
+        if (email.isEmpty()) {
+            etEmail.requestFocus()
+            etEmail.error = "Email is required"
             return
         }
+        if (password.isEmpty()){
+            etPassword.requestFocus()
+            etPassword.error = "Password is required"
+            return
+        }
+
 
         Fauth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
@@ -62,8 +72,24 @@ class LoginActivity : AppCompatActivity() {
                         getUserRole(userId)
                     }
                 } else {
-                    // Gagal login
-                    // Tambahkan penanganan kesalahan sesuai kebutuhan Anda
+                    val exception = task.exception
+                    if (exception is FirebaseAuthInvalidCredentialsException){
+                        val errorCode = (exception as FirebaseAuthInvalidCredentialsException).errorCode
+                        if (errorCode == "ERROR_INVALID_EMAIL") {
+                            etEmail.error = "Invalid email address"
+                            etEmail.error = "Email is Wrong"
+                            etEmail.requestFocus()
+                        } else {
+                            etPassword.error = "Invalid password"
+                            etPassword.error = "Email is Wrong"
+                            etPassword.requestFocus()
+                        }
+                    }
+                    else {
+                        Toast.makeText(this, "Wrong Email and Password", Toast.LENGTH_SHORT).show()
+                        etEmail.error = "Email is Wrong"
+                        etPassword.error = "Email is Wrong"
+                    }
                 }
             }
     }
@@ -86,6 +112,10 @@ class LoginActivity : AppCompatActivity() {
                     startActivity(intent)
                     finish()
                 } else if (type == "Aparat") {
+                    if (nama != null && hp != null) {
+                        val Aparat = AparatData(userId, type, nama, hp)
+                        saveAparatDataToDevice(Aparat)
+                    }
                     val intent = Intent(this@LoginActivity, AparatActivity::class.java)
                     startActivity(intent)
                 }
@@ -111,21 +141,44 @@ class LoginActivity : AppCompatActivity() {
 
     }
 
+    //simpan data aparat
+    private fun saveAparatDataToDevice(aparatData: AparatData) {
+        val sharedPreferences: SharedPreferences =
+            getSharedPreferences("AparatData", Context.MODE_PRIVATE)
+        val editor: SharedPreferences.Editor = sharedPreferences.edit()
+        editor.putString("userId", aparatData.userId)
+        editor.putString("type", aparatData.type)
+        editor.putString("nama", aparatData.nama)
+        editor.putString("hp", aparatData.hp)
+        editor.apply()
+
+    }
+
     private fun checkLocation() {
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            val alertDialog = AlertDialog.Builder(this)
-            alertDialog.setTitle("Activate Location Sensor")
-            alertDialog.setMessage("Please activate the location sensor to proceed")
-            alertDialog.setPositiveButton("OK") { _, _ ->
                 val intent = Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)
                 startActivity(intent)
-            }
-            alertDialog.setCancelable(false)
-            alertDialog.show()
         } else {
             signInUsers()
         }
     }
+
+    override fun onPause() {
+        super.onPause()
+        Intent(this, LoginActivity::class.java).flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
+    }
+    override fun onBackPressed() {
+        super.onBackPressed()
+        finishAffinity() // Menutup semua aktivitas yang terkait dengan aktivitas saat ini
+    }
+
+    private fun closeKeyboard() {
+        val view = this.currentFocus
+        val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        inputMethodManager.hideSoftInputFromWindow(view?.windowToken, 0)
+    }
+
+
 }
 

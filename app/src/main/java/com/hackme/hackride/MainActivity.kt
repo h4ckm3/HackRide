@@ -6,17 +6,26 @@ import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.hackme.hackride.activity.AparatActivity
 import com.hackme.hackride.activity.LoginActivity
 import com.hackme.hackride.activity.PemilikActivity
+import com.hackme.hackride.database.AparatData
+import com.hackme.hackride.database.User
 
 @Suppress("DEPRECATION")
 class MainActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
+    private lateinit var dataBase :DatabaseReference
     private lateinit var btnMulai: Button
     private var progressBar: ProgressBar? = null
     private var handler: Handler? = null
@@ -28,6 +37,7 @@ class MainActivity : AppCompatActivity() {
 
         progressBar = findViewById(R.id.progressBar)
         btnMulai = findViewById(R.id.btn_masuk)
+        dataBase = FirebaseDatabase.getInstance().reference
 
         btnMulai.setOnClickListener {
             progressStatus = 0
@@ -63,27 +73,45 @@ class MainActivity : AppCompatActivity() {
         // Periksa apakah pengguna telah login
         val currentUser = auth.currentUser
         if (currentUser != null) {
+            btnMulai.visibility = View.GONE
+            progressBar?.visibility = View.VISIBLE
             // Pengguna telah login
-            currentUser.uid
+            val userId =currentUser.uid
 
-            // Ambil peran pengguna dari penyimpanan lokal atau database
-            val userType = getUserTypeFromLocal() // Ubah ini dengan metode yang sesuai
-
-            // Arahkan ke menu yang sesuai berdasarkan peran pengguna
-            if (userType == "Pemilik") {
-                val intent = Intent(this, PemilikActivity::class.java)
-                startActivity(intent)
-                finish()
-            } else if (userType == "Aparat") {
-                val intent = Intent(this, AparatActivity::class.java)
-                startActivity(intent)
-                finish()
+            getUserTypeFromLocal(userId) { userType ->
+                if (userType != null) {
+                    if (userType == "Pemilik"){
+                        val inten  = Intent(this, PemilikActivity ::class.java )
+                        startActivity(inten)
+                        finishAffinity()
+                        Log.d("User Type", userType)
+                    }else{
+                        val inten  = Intent(this, AparatActivity ::class.java )
+                        startActivity(inten)
+                        finishAffinity()
+                        Log.d("User Type", userType)
+                    }
+                } else {
+                    // Penanganan kesalahan ketika gagal mendapatkan nilai userType
+                }
             }
+
         }
     }
-    private fun getUserTypeFromLocal(): String {
-        val sharedPreferences: SharedPreferences =
-            getSharedPreferences("UserData", Context.MODE_PRIVATE)
-        return sharedPreferences.getString("type", "") ?: ""
+    private fun getUserTypeFromLocal(userId: String, callback: (String?) -> Unit) {
+        val userRef = dataBase.child("users").child(userId)
+        userRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(dataSnapshot: DataSnapshot) {
+                val type = dataSnapshot.child("type").getValue(String::class.java)
+
+                callback(type)
+            }
+
+            override fun onCancelled(databaseError: DatabaseError) {
+                // Gagal mendapatkan data user dari Realtime Database
+                // Tambahkan penanganan kesalahan sesuai kebutuhan Anda
+                callback(null)
+            }
+        })
     }
 }

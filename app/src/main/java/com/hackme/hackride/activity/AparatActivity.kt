@@ -12,17 +12,24 @@ import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.util.Log
 import android.view.View
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.hackme.hackride.R
 import com.hackme.hackride.R.layout.activity_aparat
 import com.hackme.hackride.fungsi.MarkerUser
+import com.hackme.hackride.fungsi.calculateEuclideanDistance
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -30,8 +37,12 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.compass.CompassOverlay
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
+import java.util.Timer
+import java.util.TimerTask
 
 class AparatActivity : AppCompatActivity(), LocationListener {
+    //data motor
+    private var jumlahMotor : Int =0
     //lokasi aparat
     private var latAparat: Double =0.0
     private var longAparat : Double = 0.0
@@ -60,16 +71,20 @@ class AparatActivity : AppCompatActivity(), LocationListener {
     //notifikasi
     private lateinit var notifSensorLokasi : CardView
     private lateinit var notifKasus : CardView
+    private lateinit var teksNotifKasus : TextView
 
     //database
     private lateinit var auth: FirebaseAuth
-    private lateinit var database : DatabaseReference
+    private lateinit var database : FirebaseDatabase
+    private lateinit var databaseRef : DatabaseReference
 
     //masp
     lateinit var maps : MapView
     private var marker: Marker? = null
     //lokasi
     private lateinit var locationManager: LocationManager
+    // waktu
+    private var timerData : Timer? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(activity_aparat)
@@ -98,8 +113,11 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         //nisialisasi notifikasi
         notifKasus = findViewById(R.id.cv_notifikasikasus)
         notifSensorLokasi = findViewById(R.id.cv_notifikasisensorlokasi)
+        teksNotifKasus = findViewById(R.id.tv_notifikasikasus)
         //inisialisasi database
         auth = FirebaseAuth.getInstance()
+        database = FirebaseDatabase.getInstance()
+        databaseRef = database.reference
 
 
         //inisialisasi screen mulai
@@ -121,6 +139,11 @@ class AparatActivity : AppCompatActivity(), LocationListener {
             tombolHelp()
         }
 
+        //tombol maps
+        btnFokusAparat.setOnClickListener {
+            fokusAparat()
+        }
+
     }
 
     //fungsi memulai halaman
@@ -130,6 +153,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         datadarilogin()
         lokasiuser()
         setupMapView()
+        startClockData()
     }
 
     //fungsi
@@ -226,6 +250,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
 
         latAparat = location.latitude
         longAparat = location.longitude
+        markerUser(latAparat,longAparat)
         // Set the map focus to the user's current location
     }
 
@@ -239,10 +264,12 @@ class AparatActivity : AppCompatActivity(), LocationListener {
 
     override fun onPause() {
         super.onPause()
+        cancelClockData()
 
     }
     override fun onStop() {
         super.onStop()
+        cancelClockData()
     }
 
 // atau
@@ -253,6 +280,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         maps.onPause()
         marker?.onDestroy()
         Intent(this, PemilikActivity::class.java).flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
+        cancelClockData()
     }
 
     private fun checkLocation() {
@@ -315,8 +343,8 @@ class AparatActivity : AppCompatActivity(), LocationListener {
             marker = Marker(maps)}
         val customMarker = MarkerUser(this)
         marker?.position = userLocation
-        marker?.icon = customMarker.createMarker(namaAparat,R.drawable.ic_markeraparat1)
-        marker?.title = "Status: $statusAparat\nName: $namaAparat\nHp : $hpAparat\n Distance from Bike : "
+        marker?.icon = customMarker.createMarker(namaAparat,R.drawable.ic_markermotor)
+        marker?.title = "Status: $statusAparat\nName: $namaAparat\nHp : $hpAparat\n "
 
         // Add the marker overlay to the map
         marker?.let {
@@ -325,6 +353,20 @@ class AparatActivity : AppCompatActivity(), LocationListener {
 
         // Invalidate the map view to refresh the display
         maps.invalidate()
+    }
+    private fun fokusAparat(){
+        markerUser(latAparat,longAparat)
+        val initialLocation = GeoPoint(latAparat, longAparat)
+        maps.controller.setCenter(initialLocation)
+        maps.controller.setZoom(20.0)
+        val rotationGestureOverlay = RotationGestureOverlay(maps)
+        rotationGestureOverlay.isEnabled = false
+        if (!maps.boundingBox.contains(latAparat, longAparat)) {
+            Handler().postDelayed({ fokusAparat() }, 1000)
+        }else{
+            rotationGestureOverlay.isEnabled = true
+            marker?.showInfoWindow()
+        }
     }
 
     //fungsi tombol menubar
@@ -417,5 +459,85 @@ class AparatActivity : AppCompatActivity(), LocationListener {
             hpAparat = hp
             idAparat = userId
         }
+    }
+    fun countChildren(childPath: String, callback: (List<String>) -> Unit) {
+        databaseRef.child(childPath).addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(dataSnapshot: DataSnapshot) {
+                val count = dataSnapshot.childrenCount.toInt()
+                val childNames = mutableListOf<String>()
+
+                dataSnapshot.children.forEach { childSnapshot ->
+                    val childName = childSnapshot.key
+                    childName?.let { childNames.add(it) }
+                }
+
+                callback(childNames)
+            }
+
+            override fun onCancelled(databaseError: DatabaseError) {
+                // Error handling, if needed
+            }
+        })
+    }
+
+    private fun getDataMotor(id_motor: String) {
+        val motorRef = databaseRef.child("motor").child(id_motor)
+        motorRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(dataSnapshot: DataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    val latitude = dataSnapshot.child("latitude").getValue(Double::class.java)
+                    val longitude = dataSnapshot.child("longitude").getValue(Double::class.java)
+                    val mesin = dataSnapshot.child("mesin").getValue(Int::class.java)
+                    val getaran = dataSnapshot.child("getaran").getValue(Boolean::class.java)
+                    val latitudeParkir = dataSnapshot.child("latitudeparkir").getValue(Double::class.java)
+                    val longitudeParkir = dataSnapshot.child("longitudeparkir").getValue(Double::class.java)
+
+                    if (latitude != null && longitude != null && latitudeParkir != null && longitudeParkir != null && mesin != null && getaran != null) {
+                        val jarakAman = calculateEuclideanDistance(latitude,longitude,latitudeParkir,longitudeParkir)
+                        val jarakAparat = calculateEuclideanDistance(latAparat,longAparat,latitude,longitude)
+                        if (mesin == 0 && jarakAman < 50 && jarakAparat < 10000){
+                            notifKasus.visibility = nampak
+                            teksNotifKasus.text = "The motor with id $id_motor has been stolen\ndistance from you $jarakAparat m"
+                        }else{
+                            notifKasus.visibility = hilang
+                        }
+                    }
+                    // Lakukan sesuatu dengan data yang telah diambil
+                    // Contoh: tampilkan data di logcat
+                    Log.d("Data Motor", "Latitude: $latitude, Longitude: $longitude, Mesin: $mesin, Getaran: $getaran, Latitude Parkir: $latitudeParkir, Longitude Parkir: $longitudeParkir")
+                } else {
+                    // Data motor dengan id_motor tersebut tidak ditemukan
+                }
+            }
+
+            override fun onCancelled(databaseError: DatabaseError) {
+                // Terjadi kesalahan saat mengambil data dari Firebase
+                Log.e("Data Motor", "Error: ${databaseError.message}")
+            }
+        })
+    }
+
+    //fungsi timer
+    private fun startClockData() {
+        val mapView = findViewById<MapView>(R.id.mapView) // Inisialisasi mapView
+        timerData = Timer()
+        timerData?.scheduleAtFixedRate(object : TimerTask() {
+            override fun run() {
+                // Kode untuk pembaruan data setiap detik
+                runOnUiThread {
+                    // Panggil fungsi updateData() atau kode pembaruan data lainnya di sini
+                    val childPath = "motor"
+                    countChildren(childPath) { childNames ->
+                        childNames.forEach { childName ->
+                            getDataMotor(childName)
+                        }
+                    }
+                }
+            }
+        }, 0, 1000) // Menjalankan tugas setiap 1000 milidetik (1 detik)
+    }
+    private fun cancelClockData() {
+        timerData?.cancel()
+        timerData = null
     }
 }

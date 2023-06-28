@@ -546,6 +546,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
 
     private fun cancelClock() {
         timerMarker?.cancel()
+        timerMarker = null
     }
 
     private fun drawPolyline(startLatitude: Double, startLongitude: Double, endLatitude: Double, endLongitude: Double) {

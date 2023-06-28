@@ -7,10 +7,17 @@
     android:orientation="vertical"
     android:gravity="center"
     android:background="@drawable/bgapp">
-    <ImageView
+    <LinearLayout
         android:layout_width="200dp"
         android:layout_height="200dp"
-        android:src="@drawable/logoapp"/>
+        android:background="@drawable/logoapp">
+        <ProgressBar
+            android:id="@+id/pgrs_login"
+            android:visibility="gone"
+            style="?android:attr/progressBarStyle"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

@@ -1,5 +1,6 @@
 package com.hackme.hackride.activity
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -16,7 +17,9 @@ import com.google.firebase.database.ValueEventListener
 import com.hackme.hackride.R
 import com.hackme.hackride.database.User
 import android.location.LocationManager
+import android.view.View
 import android.view.inputmethod.InputMethodManager
+import android.widget.ProgressBar
 import android.widget.Toast
 import com.google.firebase.FirebaseError.ERROR_INVALID_EMAIL
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -29,7 +32,9 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var etEmail: EditText
     private lateinit var etPassword: EditText
     private lateinit var btnLogin: Button
+    private lateinit var loadingLogin : ProgressBar
 
+    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
@@ -37,6 +42,7 @@ class LoginActivity : AppCompatActivity() {
         Fauth = FirebaseAuth.getInstance()
         btnLogin = findViewById(R.id.btn_login)
         HRDBS = FirebaseDatabase.getInstance().reference
+        loadingLogin = findViewById(R.id.pgrs_login)
 
         etEmail = findViewById(R.id.et_email)
         etPassword = findViewById(R.id.et_password)
@@ -54,11 +60,13 @@ class LoginActivity : AppCompatActivity() {
         if (email.isEmpty()) {
             etEmail.requestFocus()
             etEmail.error = "Email is required"
+            loadingLogin.visibility = View.GONE
             return
         }
         if (password.isEmpty()){
             etPassword.requestFocus()
             etPassword.error = "Password is required"
+            loadingLogin.visibility = View.GONE
             return
         }
 
@@ -70,6 +78,7 @@ class LoginActivity : AppCompatActivity() {
                     if (currentUser != null) {
                         val userId = currentUser.uid
                         getUserRole(userId)
+                        loadingLogin.visibility = View.GONE
                     }
                 } else {
                     val exception = task.exception
@@ -79,16 +88,17 @@ class LoginActivity : AppCompatActivity() {
                             etEmail.error = "Invalid email address"
                             etEmail.error = "Email is Wrong"
                             etEmail.requestFocus()
+                            loadingLogin.visibility = View.GONE
                         } else {
                             etPassword.error = "Invalid password"
-                            etPassword.error = "Email is Wrong"
+                            etPassword.error = "Password is Wrong"
                             etPassword.requestFocus()
+                            loadingLogin.visibility = View.GONE
                         }
                     }
                     else {
                         Toast.makeText(this, "Wrong Email and Password", Toast.LENGTH_SHORT).show()
-                        etEmail.error = "Email is Wrong"
-                        etPassword.error = "Email is Wrong"
+                        loadingLogin.visibility = View.GONE
                     }
                 }
             }
@@ -160,6 +170,7 @@ class LoginActivity : AppCompatActivity() {
                 val intent = Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)
                 startActivity(intent)
         } else {
+            loadingLogin.visibility = View.VISIBLE
             signInUsers()
         }
     }

@@ -145,7 +145,7 @@
                                 <ImageView
                                     android:layout_width="30dp"
                                     android:layout_height="30dp"
-                                    android:src="@drawable/ic_markerpemilik" />
+                                    android:src="@drawable/ic_markermotor" />
                             </LinearLayout>
                         </androidx.cardview.widget.CardView>
                     </RelativeLayout>
@@ -345,6 +345,7 @@
                         android:layout_height="wrap_content"
                         android:text="Your motorcycle theft has been detected"
                         android:textColor="@color/black"
+                        android:gravity="center"
                         android:textSize="12dp"
                         tools:ignore="TextSizeCheck" />
 

@@ -28,6 +28,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.hackme.hackride.R
 import com.hackme.hackride.R.layout.activity_aparat
+import com.hackme.hackride.fungsi.AparatService
 import com.hackme.hackride.fungsi.MarkerUser
 import com.hackme.hackride.fungsi.calculateEuclideanDistance
 import org.osmdroid.config.Configuration
@@ -154,15 +155,24 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         lokasiuser()
         setupMapView()
         startClockData()
+        // Memulai AparatService dengan mengirimkan ID pengguna
+        val startServiceIntent = Intent(this, AparatService::class.java)
+        startServiceIntent.putExtra("USER_ID", idAparat)
+        startService(startServiceIntent)
     }
 
     //fungsi
     private fun logoutAparat(){
         auth.signOut()
         val intent = Intent(this, LoginActivity::class.java)
+        // Menghentikan AparatService
+        val stopServiceIntent = Intent(this, AparatService::class.java)
+        stopService(stopServiceIntent)
         Intent(this, PemilikActivity::class.java).flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
         finishAffinity()
         startActivity(intent)
+        hapusDataAparat()
+        locationManager.removeUpdates(this)
     }
     //lokasi user
 
@@ -281,6 +291,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         marker?.onDestroy()
         Intent(this, PemilikActivity::class.java).flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
         cancelClockData()
+
     }
 
     private fun checkLocation() {

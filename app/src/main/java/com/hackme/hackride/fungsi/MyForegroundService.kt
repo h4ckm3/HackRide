@@ -269,10 +269,14 @@ class MyForegroundService : Service() {
 
     private fun startForegroundService(title: String,message: String) {
         val channelId = "foreground_service_channel"
+        // Membuat intent untuk membuka activity saat notifikasi ditekan (opsional)
+        val intent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.logoappbgputihblt)
             .setContentTitle(title)
             .setContentText(message)
+            .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
 

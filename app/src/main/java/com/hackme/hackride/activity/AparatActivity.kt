@@ -129,6 +129,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         btnLout.setOnClickListener {
             logoutAparat()
             tombolLogout()
+            locationManager.removeUpdates(this)
         }
         btnHome.setOnClickListener {
             tombolHome()
@@ -172,7 +173,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         finishAffinity()
         startActivity(intent)
         hapusDataAparat()
-        locationManager.removeUpdates(this)
+
     }
     //lokasi user
 
@@ -536,6 +537,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
             override fun run() {
                 // Kode untuk pembaruan data setiap detik
                 runOnUiThread {
+                    markerUser(latAparat,longAparat)
                     // Panggil fungsi updateData() atau kode pembaruan data lainnya di sini
                     val childPath = "motor"
                     countChildren(childPath) { childNames ->

@@ -28,6 +28,7 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.hackme.hackride.R
+import com.hackme.hackride.database.DataKasus
 import com.hackme.hackride.fungsi.MarkerMotor
 import com.hackme.hackride.fungsi.MarkerUser
 import com.hackme.hackride.fungsi.MyForegroundService
@@ -205,7 +206,15 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
             finishAffinity()
         }
         btn_exitNotifikasilokasi.setOnClickListener {
+            val serviceIntent = Intent(this, MyForegroundService::class.java)
+            stopService(serviceIntent)
             notiSensorLokasi.visibility = View.GONE
+            finishAffinity()
+        }
+        //tombol notifikasi kemalingan
+        btnLacakNotifKemalingan.setOnClickListener {
+            val intent = Intent(this,LacakActivity::class.java)
+            startActivity(intent)
             finishAffinity()
         }
 
@@ -475,7 +484,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
 
         val initialLocation = GeoPoint(motorLatitude, motorLongitude)
         mapView.controller.setCenter(initialLocation)
-        mapView.controller.setZoom(19.0)
+        mapView.controller.setZoom(15.0)
 
         if (motorLatitude != 0.0 && motorLongitude != 0.0) {
             if (!mapView.boundingBox.contains(motorLatitude, motorLongitude)) {
@@ -736,8 +745,11 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         if (Mesin == "Nonactive"){
             if (jarakAman > 50){
                 notifKemalingan.visibility=View.VISIBLE
+                val kasusdata = DataKasus(Id_user,status,ID_Motor)
+                saveDataKasus(kasusdata)
             }else{
                 notifKemalingan.visibility=View.GONE
+                hapusDataKasus()
             }
         }else{
             notifKemalingan.visibility=View.GONE
@@ -774,6 +786,26 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         editor.apply()
     }
 
+    //data kasus
+    private fun saveDataKasus(dataKasus: DataKasus) {
+        val sharedPreferences: SharedPreferences =
+            getSharedPreferences("DataKasus", Context.MODE_PRIVATE)
+        val editor: SharedPreferences.Editor = sharedPreferences.edit()
+        editor.putString("id_user", dataKasus.id_user)
+        editor.putString("status", dataKasus.status)
+        editor.putString("id_motor", dataKasus.id_motor)
+        editor.apply()
+
+    }
+    private fun hapusDataKasus(){
+        // Mendapatkan instance dari SharedPreferences
+        val sharedPreferences = getSharedPreferences("DataKasus", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.remove("id_user")
+        editor.remove("status")
+        editor.remove("id_motor")
+        editor.apply()
+    }
 }
 
 

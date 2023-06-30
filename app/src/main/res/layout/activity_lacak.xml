@@ -23,6 +23,10 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
+                <org.osmdroid.views.MapView
+                    android:id="@+id/mapView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"/>
 
             </LinearLayout>
 
@@ -33,147 +37,154 @@
             app:cardCornerRadius="30dp"
             app:cardBackgroundColor="@color/white"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="81dp"
             android:layout_margin="10dp">
-            <LinearLayout
-                android:layout_marginHorizontal="10dp"
+            <ScrollView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-                <!--Marker motor-->
+                android:layout_height="match_parent">
                 <LinearLayout
-                    android:id="@+id/linlay_btnMarkerMotor"
+                    android:layout_marginHorizontal="10dp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="5dp">
-                    <ImageView
-                        android:id="@+id/img_markerMotor"
-                        android:layout_width="25dp"
-                        android:layout_height="25dp"
-                        android:src="@drawable/ic_markerpemilik"/>
-                    <TextView
-                        android:id="@+id/tv_MarkerMotor"
-                        android:layout_width="wrap_content"
+                    android:orientation="vertical"
+                    android:scrollbars="vertical">
+                    <!--Marker motor-->
+                    <LinearLayout
+                        android:id="@+id/linlay_btnMarkerMotor"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="BA123A"/>
-                </LinearLayout>
-                <!--Marker Pemilik-->
-                <LinearLayout
-                    android:id="@+id/linlay_btnMarkerPemilik"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-                    <ImageView
-                        android:id="@+id/img_markerPemilik"
-                        android:layout_width="25dp"
-                        android:layout_height="25dp"
-                        android:src="@drawable/ic_markerpemilik"/>
-                    <TextView
-                        android:id="@+id/tv_MarkerPemilik"
-                        android:layout_width="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="5dp">
+                        <ImageView
+                            android:id="@+id/img_markerMotor"
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:src="@drawable/ic_markerpemilik"/>
+                        <TextView
+                            android:id="@+id/tv_MarkerMotor"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="BA123A"/>
+                    </LinearLayout>
+                    <!--Marker Pemilik-->
+                    <LinearLayout
+                        android:id="@+id/linlay_btnMarkerPemilik"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Name Pemilik\n message:"/>
-                </LinearLayout>
-                <!--Marker Aparat 1-->
-                <LinearLayout
-                    android:id="@+id/linlay_btnMarkerAparat1"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-                    <ImageView
-                        android:id="@+id/img_markerAparat1"
-                        android:layout_width="25dp"
-                        android:layout_height="25dp"
-                        android:src="@drawable/ic_markerpemilik"/>
-                    <TextView
-                        android:id="@+id/tv_markerAparat1"
-                        android:layout_width="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:id="@+id/img_markerPemilik"
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:src="@drawable/ic_markerpemilik"/>
+                        <TextView
+                            android:id="@+id/tv_MarkerPemilik"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Name Pemilik\n message:"/>
+                    </LinearLayout>
+                    <!--Marker Aparat 1-->
+                    <LinearLayout
+                        android:id="@+id/linlay_btnMarkerAparat1"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Name Pemilik\n message:"/>
-                </LinearLayout>
-                <!--Marker Aparat 2-->
-                <LinearLayout
-                    android:id="@+id/linlay_btnMarkerAparat2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-                    <ImageView
-                        android:id="@+id/img_markerAparat2"
-                        android:layout_width="25dp"
-                        android:layout_height="25dp"
-                        android:src="@drawable/ic_markerpemilik"/>
-                    <TextView
-                        android:id="@+id/tv_markerAparat2"
-                        android:layout_width="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:id="@+id/img_markerAparat1"
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:src="@drawable/ic_markerpemilik"/>
+                        <TextView
+                            android:id="@+id/tv_markerAparat1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Name Pemilik\n message:"/>
+                    </LinearLayout>
+                    <!--Marker Aparat 2-->
+                    <LinearLayout
+                        android:id="@+id/linlay_btnMarkerAparat2"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Name Pemilik\n message:"/>
-                </LinearLayout>
-                <!--Marker Aparat 3-->
-                <LinearLayout
-                    android:id="@+id/linlay_btnMarkerAparat3"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-                    <ImageView
-                        android:id="@+id/img_markerAparat3"
-                        android:layout_width="25dp"
-                        android:layout_height="25dp"
-                        android:src="@drawable/ic_markerpemilik"/>
-                    <TextView
-                        android:id="@+id/tv_markerAparat3"
-                        android:layout_width="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:id="@+id/img_markerAparat2"
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:src="@drawable/ic_markerpemilik"/>
+                        <TextView
+                            android:id="@+id/tv_markerAparat2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Name Pemilik\n message:"/>
+                    </LinearLayout>
+                    <!--Marker Aparat 3-->
+                    <LinearLayout
+                        android:id="@+id/linlay_btnMarkerAparat3"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Name Pemilik\n message:"/>
-                </LinearLayout>
-                <!--Marker Aparat 4-->
-                <LinearLayout
-                    android:id="@+id/linlay_btnMarkerAparat4"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-                    <ImageView
-                        android:id="@+id/img_markerAparat4"
-                        android:layout_width="25dp"
-                        android:layout_height="25dp"
-                        android:src="@drawable/ic_markerpemilik"/>
-                    <TextView
-                        android:id="@+id/tv_markerAparat4"
-                        android:layout_width="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:id="@+id/img_markerAparat3"
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:src="@drawable/ic_markerpemilik"/>
+                        <TextView
+                            android:id="@+id/tv_markerAparat3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Name Pemilik\n message:"/>
+                    </LinearLayout>
+                    <!--Marker Aparat 4-->
+                    <LinearLayout
+                        android:id="@+id/linlay_btnMarkerAparat4"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Name Pemilik\n message:"/>
-                </LinearLayout>
-                <!--Marker Aparat 5-->
-                <LinearLayout
-                    android:id="@+id/linlay_btnMarkerAparat5"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-                    <ImageView
-                        android:id="@+id/img_markerAparat5"
-                        android:layout_width="25dp"
-                        android:layout_height="25dp"
-                        android:src="@drawable/ic_markerpemilik"/>
-                    <TextView
-                        android:id="@+id/tv_markerAparat5"
-                        android:layout_width="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:id="@+id/img_markerAparat4"
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:src="@drawable/ic_markerpemilik"/>
+                        <TextView
+                            android:id="@+id/tv_markerAparat4"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Name Pemilik\n message:"/>
+                    </LinearLayout>
+                    <!--Marker Aparat 5-->
+                    <LinearLayout
+                        android:id="@+id/linlay_btnMarkerAparat5"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Name Pemilik\n message:"/>
+                        android:layout_marginTop="5dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:id="@+id/img_markerAparat5"
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:src="@drawable/ic_markerpemilik"/>
+                        <TextView
+                            android:id="@+id/tv_markerAparat5"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Name Pemilik\n message:"/>
+                    </LinearLayout>
                 </LinearLayout>
-            </LinearLayout>
+
+            </ScrollView>
+
         </androidx.cardview.widget.CardView>
         <!--pesan-->
         <LinearLayout
@@ -205,11 +216,12 @@
                 app:cardBackgroundColor="@color/white"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="30dp">
+                app:cardCornerRadius="30dp"
+                android:layout_marginRight="5dp">
 
                 <ImageView
-                    android:layout_width="50dp"
-                    android:layout_height="50dp"
+                    android:layout_width="45dp"
+                    android:layout_height="40dp"
                     android:padding="5dp"
                     android:src="@drawable/ic_pesan" />
             </androidx.cardview.widget.CardView>

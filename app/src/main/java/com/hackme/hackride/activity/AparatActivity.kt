@@ -30,8 +30,11 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.hackme.hackride.R
 import com.hackme.hackride.R.layout.activity_aparat
+import com.hackme.hackride.database.AparatData
+import com.hackme.hackride.database.DataKasus
 import com.hackme.hackride.fungsi.AparatService
 import com.hackme.hackride.fungsi.MarkerUser
+import com.hackme.hackride.fungsi.MyForegroundService
 import com.hackme.hackride.fungsi.calculateEuclideanDistance
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -75,6 +78,8 @@ class AparatActivity : AppCompatActivity(), LocationListener {
 
     //notifikasi
     private lateinit var notifSensorLokasi : CardView
+    private lateinit var btnAktifkanLokasi : Button
+    private lateinit var btnExitnonLokasi :Button
     private lateinit var notifKasus : CardView
     private lateinit var teksNotifKasus : TextView
 
@@ -119,6 +124,8 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         //nisialisasi notifikasi
         notifKasus = findViewById(R.id.cv_notifikasikasus)
         notifSensorLokasi = findViewById(R.id.cv_notifikasisensorlokasi)
+        btnAktifkanLokasi = findViewById(R.id.btn_aktifkanlokasi)
+        btnExitnonLokasi = findViewById(R.id.btn_tolakaktifkanlokasi)
         teksNotifKasus = findViewById(R.id.tv_notifikasikasus)
         //inisialisasi database
         auth = FirebaseAuth.getInstance()
@@ -156,6 +163,20 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         //tombol maps
         btnFokusAparat.setOnClickListener {
             fokusAparat()
+        }
+
+        //tombol notifikasi lokasi
+        btnAktifkanLokasi.setOnClickListener {
+            val intent = Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+            startActivity(intent)
+            notifSensorLokasi.visibility = View.GONE
+            finishAffinity()
+        }
+        btnExitnonLokasi.setOnClickListener {
+            val serviceIntent = Intent(this, AparatService::class.java)
+            stopService(serviceIntent)
+            notifSensorLokasi.visibility = View.GONE
+            finishAffinity()
         }
 
     }
@@ -328,7 +349,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
 
         val initialLocation = GeoPoint(latAparat, longAparat)
         maps.controller.setCenter(initialLocation)
-        maps.controller.setZoom(19.0)
+        maps.controller.setZoom(15.0)
 
         if (latAparat != 0.0 && longAparat != 0.0) {
             if (!maps.boundingBox.contains(latAparat, longAparat)) {
@@ -522,8 +543,11 @@ class AparatActivity : AppCompatActivity(), LocationListener {
                         if (mesin == 0 && jarakAman < 50 && jarakAparat < 10000){
                             notifKasus.visibility = nampak
                             teksNotifKasus.text = "The motor with id $id_motor has been stolen\ndistance from you $jarakAparat m"
+                            val kasusData = DataKasus(idAparat,statusAparat,id_motor)
+                            saveDataKasus(kasusData)
                         }else{
                             notifKasus.visibility = hilang
+                            hapusDataKasus()
                         }
                     }
                     // Lakukan sesuatu dengan data yang telah diambil
@@ -564,5 +588,26 @@ class AparatActivity : AppCompatActivity(), LocationListener {
     private fun cancelClockData() {
         timerData?.cancel()
         timerData = null
+    }
+
+    //fungsi ketika terjadi kasus
+    private fun saveDataKasus(dataKasus: DataKasus) {
+        val sharedPreferences: SharedPreferences =
+            getSharedPreferences("DataKasus", Context.MODE_PRIVATE)
+        val editor: SharedPreferences.Editor = sharedPreferences.edit()
+        editor.putString("id_user", dataKasus.id_user)
+        editor.putString("status", dataKasus.status)
+        editor.putString("id_motor", dataKasus.id_motor)
+        editor.apply()
+
+    }
+    private fun hapusDataKasus(){
+        // Mendapatkan instance dari SharedPreferences
+        val sharedPreferences = getSharedPreferences("DataKasus", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.remove("id_user")
+        editor.remove("status")
+        editor.remove("id_motor")
+        editor.apply()
     }
 }

@@ -20,15 +20,51 @@
             android:layout_weight="1"
             app:cardCornerRadius="30dp">
 
-            <LinearLayout
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
                 <org.osmdroid.views.MapView
                     android:id="@+id/mapView"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"/>
+                <!--tombol telephone-->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cv_btnTelephone"
+                    app:cardBackgroundColor="@color/colorPrimary"
+                    app:cardCornerRadius="30dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentBottom="true"
+                    android:layout_marginEnd="10dp"
+                    android:layout_marginBottom="20dp">
 
-            </LinearLayout>
+                    <ImageView
+                        android:padding="10dp"
+                        android:layout_width="45dp"
+                        android:layout_height="45dp"
+                        android:src="@drawable/ic_telephone" />
+                </androidx.cardview.widget.CardView>
+                <!--tombol stoplacak-->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cv_btnStoplacak"
+                    app:cardBackgroundColor="@color/colorPrimary"
+                    app:cardCornerRadius="30dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentBottom="true"
+                    android:layout_marginEnd="10dp"
+                    android:layout_marginBottom="20dp">
+
+                    <ImageView
+                        android:padding="10dp"
+                        android:layout_width="45dp"
+                        android:layout_height="45dp"
+                        android:src="@drawable/ic_stoplacak" />
+                </androidx.cardview.widget.CardView>
+
+            </RelativeLayout>
 
         </androidx.cardview.widget.CardView>
         <!--legenda-->

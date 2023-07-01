@@ -1,6 +1,7 @@
 package com.hackme.hackride.fungsi
 
 import android.Manifest
+import android.app.ActivityManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -144,9 +145,10 @@ class AparatService : Service() {
                     if (latitude != null && longitude != null && latitudeParkir != null && longitudeParkir != null && mesin != null && getaran != null) {
                         val jarakAman = calculateEuclideanDistance(latitude, longitude, latitudeParkir, longitudeParkir)
                         val jarakAparat = calculateEuclideanDistance(latAparat, longAparat, latitude, longitude)
+                        val bulat = Math.round(jarakAparat)
                         if (mesin == 0 && jarakAman < 50 && jarakAparat < 10000) {
                             // Lakukan sesuatu jika kondisi memenuhi
-                            showHeadsUpNotification("A theft case has occurred","Id $id_motor distance from you $jarakAparat m")
+                            cekAktiviti(id_motor,bulat)
                         } else {
                             // Lakukan sesuatu jika kondisi tidak memenuhi
                             cancelNotification()
@@ -288,5 +290,28 @@ class AparatService : Service() {
     private fun cancelNotification() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(2)
+    }
+
+    //fungsi cek aktifitas sekarang
+    private fun cekAktiviti(idMotor: String, JarakAparat: Long){
+        val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val runningActivities = activityManager.getRunningTasks(1)
+
+        if (runningActivities.isNotEmpty()) {
+            val topActivity = runningActivities[0].topActivity
+            val packageName = topActivity?.packageName
+            val className = topActivity?.className
+            Log.d("aktifitas","$packageName   $className")
+
+            // Lakukan pengecekan packageName dan className untuk menentukan aktivitas yang sedang aktif
+            if (packageName == "com.hackme.hackride" && className == "com.hackme.hackride.activity.LacakActivity") {
+                // Lakukan tindakan sesuai dengan aktivitas LacakActivity yang sedang aktif
+                cancelNotification()
+            }
+            else{
+                showHeadsUpNotification("A theft case has occurred","Id $idMotor distance from you $JarakAparat m")
+            }
+        }
+
     }
 }

@@ -32,7 +32,7 @@ class MyForegroundService : Service() {
     private var getaranMotor : Boolean = false
     private var latPerkir : Double = 0.0
     private var longParkir : Double =0.0
-
+    private var JarakUser : Int = 0
 
     private lateinit var database: DatabaseReference
     private var status:String =""
@@ -200,10 +200,11 @@ class MyForegroundService : Service() {
 
         val distance = calculateEuclideanDistance(motorLat, motorLng, parkirLat, parkirLng)
         val jarakUser = Math.round(calculateEuclideanDistance(motorLat,motorLng,latUser,longUser))
+        JarakUser = jarakUser
         Log.d("Jarak", "jarak $distance status: $status id motor: $idMotor")
         if (status == "Pemilik"){
             if (distance > 50 && mesin == 0) {
-                showHeadsUpNotification("Beware of Detected Theft", "Distance from you $jarakUser m")
+                cekAktiviti()
             }else{
                 cancelNotification()
             }
@@ -379,6 +380,29 @@ class MyForegroundService : Service() {
         }
 
         return userLocation
+    }
+
+    //cek aktifiti fungsi
+    private fun cekAktiviti(){
+        val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val runningActivities = activityManager.getRunningTasks(1)
+
+        if (runningActivities.isNotEmpty()) {
+            val topActivity = runningActivities[0].topActivity
+            val packageName = topActivity?.packageName
+            val className = topActivity?.className
+            Log.d("aktifitas","$packageName   $className")
+
+            // Lakukan pengecekan packageName dan className untuk menentukan aktivitas yang sedang aktif
+            if (packageName == "com.hackme.hackride" && className == "com.hackme.hackride.activity.LacakActivity") {
+                // Lakukan tindakan sesuai dengan aktivitas LacakActivity yang sedang aktif
+                cancelNotification()
+            }
+            else{
+                showHeadsUpNotification("Beware of Detected Theft", "Distance from you $JarakUser m")
+            }
+        }
+
     }
 
 }

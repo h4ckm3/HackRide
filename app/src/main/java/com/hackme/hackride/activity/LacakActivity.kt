@@ -344,9 +344,6 @@ class LacakActivity : AppCompatActivity() {
             }
 
             // Create a new marker
-//        maps = MapView(this);
-        if (::maps.isInitialized){
-            }
 
             val customMarker = MarkerUser(this)
             marker?.position = userLocation

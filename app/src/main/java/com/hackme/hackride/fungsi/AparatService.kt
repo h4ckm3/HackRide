@@ -146,8 +146,10 @@ class AparatService : Service() {
                         val jarakAman = calculateEuclideanDistance(latitude, longitude, latitudeParkir, longitudeParkir)
                         val jarakAparat = calculateEuclideanDistance(latAparat, longAparat, latitude, longitude)
                         val bulat = Math.round(jarakAparat)
-                        if (mesin == 0 && jarakAman < 50 && jarakAparat < 10000) {
+                        Log.d("notif seharusnya muncul","$mesin  $jarakAman  $jarakAparat")
+                        if (mesin == 0 && jarakAman > 50 && jarakAparat < 10000) {
                             // Lakukan sesuatu jika kondisi memenuhi
+                            Log.d("notif seharusnya muncul","$mesin  $jarakAman  $jarakAparat")
                             cekAktiviti(id_motor,bulat)
                         } else {
                             // Lakukan sesuatu jika kondisi tidak memenuhi

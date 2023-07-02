@@ -508,7 +508,6 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         compassOverlay.enableCompass()
         mapView.overlays.add(compassOverlay)
     }
-
     private fun enableZoomControls() {
         mapView.setBuiltInZoomControls(true)
         mapView.setMultiTouchControls(true)
@@ -745,7 +744,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         if (Mesin == "Nonactive"){
             if (jarakAman > 50){
                 notifKemalingan.visibility=View.VISIBLE
-                val kasusdata = DataKasus(Id_user,status,ID_Motor)
+                val kasusdata = DataKasus(Id_user,status,ID_Motor,Id_user)
                 saveDataKasus(kasusdata)
             }else{
                 notifKemalingan.visibility=View.GONE
@@ -794,6 +793,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         editor.putString("id_user", dataKasus.id_user)
         editor.putString("status", dataKasus.status)
         editor.putString("id_motor", dataKasus.id_motor)
+        editor.putString("id_pemilik", dataKasus.id_pemilik)
         editor.apply()
 
     }
@@ -804,6 +804,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         editor.remove("id_user")
         editor.remove("status")
         editor.remove("id_motor")
+        editor.remove("id_pemilik")
         editor.apply()
     }
 }

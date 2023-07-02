@@ -28,6 +28,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.ktx.getValue
 import com.hackme.hackride.R
 import com.hackme.hackride.R.layout.activity_aparat
 import com.hackme.hackride.database.AparatData
@@ -82,6 +83,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
     private lateinit var btnExitnonLokasi :Button
     private lateinit var notifKasus : CardView
     private lateinit var teksNotifKasus : TextView
+    private lateinit var btnLacakKasus : Button
 
     //database
     private lateinit var auth: FirebaseAuth
@@ -127,13 +129,13 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         btnAktifkanLokasi = findViewById(R.id.btn_aktifkanlokasi)
         btnExitnonLokasi = findViewById(R.id.btn_tolakaktifkanlokasi)
         teksNotifKasus = findViewById(R.id.tv_notifikasikasus)
+        btnLacakKasus = findViewById(R.id.btn_lacakkemalingan)
         //inisialisasi database
         auth = FirebaseAuth.getInstance()
         database = FirebaseDatabase.getInstance()
         databaseRef = database.reference
         //ujicoba
-        btnLacak = findViewById(R.id.btn_ujicobalacak)
-        btnLacak.setOnClickListener {
+        btnLacakKasus.setOnClickListener {
             val lacak = Intent(this, LacakActivity::class.java)
             startActivity(lacak)
             finishAffinity()
@@ -307,12 +309,14 @@ class AparatActivity : AppCompatActivity(), LocationListener {
     }
 
     override fun onPause() {
+        maps.onPause()
         super.onPause()
         cancelClockData()
 
     }
     override fun onStop() {
         super.onStop()
+        maps.onPause()
         cancelClockData()
     }
 
@@ -388,7 +392,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
             marker = Marker(maps)}
         val customMarker = MarkerUser(this)
         marker?.position = userLocation
-        marker?.icon = customMarker.createMarker(namaAparat,R.drawable.ic_markermotor)
+        marker?.icon = customMarker.createMarker(namaAparat,R.drawable.ic_markeraparat4)
         marker?.title = "Status: $statusAparat\nName: $namaAparat\nHp : $hpAparat\n "
 
         // Add the marker overlay to the map
@@ -536,14 +540,15 @@ class AparatActivity : AppCompatActivity(), LocationListener {
                     val getaran = dataSnapshot.child("getaran").getValue(Boolean::class.java)
                     val latitudeParkir = dataSnapshot.child("latitudeparkir").getValue(Double::class.java)
                     val longitudeParkir = dataSnapshot.child("longitudeparkir").getValue(Double::class.java)
-
-                    if (latitude != null && longitude != null && latitudeParkir != null && longitudeParkir != null && mesin != null && getaran != null) {
+                    val idPemilik = dataSnapshot.child("id_pemilik").getValue(String::class.java)
+                    if (latitude != null && longitude != null && latitudeParkir != null && longitudeParkir != null && mesin != null && getaran != null&& idPemilik != null) {
                         val jarakAman = calculateEuclideanDistance(latitude,longitude,latitudeParkir,longitudeParkir)
                         val jarakAparat = calculateEuclideanDistance(latAparat,longAparat,latitude,longitude)
-                        if (mesin == 0 && jarakAman < 50 && jarakAparat < 10000){
+                        val bulatJarakaparat = Math.round(jarakAparat)
+                        if (mesin == 0 && jarakAman > 50 && jarakAparat < 10000){
                             notifKasus.visibility = nampak
-                            teksNotifKasus.text = "The motor with id $id_motor has been stolen\ndistance from you $jarakAparat m"
-                            val kasusData = DataKasus(idAparat,statusAparat,id_motor)
+                            teksNotifKasus.text = "The motor with id $id_motor has been stolen\ndistance from you $bulatJarakaparat m"
+                            val kasusData = DataKasus(idAparat,statusAparat,id_motor,idPemilik)
                             saveDataKasus(kasusData)
                         }else{
                             notifKasus.visibility = hilang
@@ -598,6 +603,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         editor.putString("id_user", dataKasus.id_user)
         editor.putString("status", dataKasus.status)
         editor.putString("id_motor", dataKasus.id_motor)
+        editor.putString("id_pemilik", dataKasus.id_pemilik)
         editor.apply()
 
     }
@@ -608,6 +614,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         editor.remove("id_user")
         editor.remove("status")
         editor.remove("id_motor")
+        editor.remove("id_pemilik")
         editor.apply()
     }
 }

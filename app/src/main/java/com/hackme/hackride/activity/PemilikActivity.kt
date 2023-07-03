@@ -1,6 +1,7 @@
 package com.hackme.hackride.activity
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
@@ -78,8 +79,10 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
     private var status:String=""
     private var noHp: String=""
     private var timerMarker: Timer? = null
+    private var timerAbaikan: Timer? = null
     private var Mesin : String =""
     private var Gtaran : Boolean = false
+    private var Abaikan : Boolean = false
 
     //tombol maps
     private lateinit var btnFokusUser : CardView
@@ -93,10 +96,16 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
     private lateinit var notiSensorLokasi : CardView
     private lateinit var btn_Oknotifaktifkanlokasi : Button
     private lateinit var btn_exitNotifikasilokasi :Button
+    //notifikasi jauh
+    private lateinit var notiFikasiJauh : CardView
+    private lateinit var btnLapor : Button
+    private lateinit var btnAbaikan : Button
+    private lateinit var btnStopAbaikan : CardView
 
 
 
 
+    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_pemilik)
@@ -110,6 +119,8 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         //tombol pada maps
         btnFokusUser = findViewById(R.id.cv_btnfokuspemilik)
         btnFokusMotor = findViewById(R.id.cv_btnfokusmotor)
+        motorMarker = Marker(mapView)
+        marker = Marker(mapView)
 
         //notifikasi
         //notifikasi kemalingan
@@ -131,6 +142,14 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         auth = FirebaseAuth.getInstance()
         database = FirebaseDatabase.getInstance().reference
+
+        //notifikasi jauh inisialisasi
+        notiFikasiJauh = findViewById(R.id.cv_notifikasikejauhan)
+        btnLapor = findViewById(R.id.btn_lacakkejauhan)
+        btnAbaikan = findViewById(R.id.btn_aktifkabJauh)
+        btnStopAbaikan = findViewById(R.id.cv_btnstopAbaikan)
+
+        notiFikasiJauh.visibility = View.GONE
 
 
         // ambi data dari login user
@@ -216,6 +235,17 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
             val intent = Intent(this,LacakActivity::class.java)
             startActivity(intent)
             finishAffinity()
+        }
+        //tombol notifikasi jauh
+        btnAbaikan.setOnClickListener {
+            Abaikan()
+            Log.d("abaikan", "btnAbaikan $Abaikan")
+        }
+        btnLapor.setOnClickListener {
+            laporkan()
+        }
+        btnStopAbaikan.setOnClickListener {
+            StopAbaikan()
         }
 
     }
@@ -366,6 +396,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
                         markerUser(userLatitude,userLongitude)
                         addMotorMarker(motorLatitude,motorLongitude)
                         drawPolyline(motorLatitude,motorLongitude,userLatitude,userLongitude)
+                        jarakUserMotorHidup(mesin)
 //                        val initialLocation = GeoPoint(motorLatitude, motorLongitude)
 //                        mapView.controller.setCenter(initialLocation)
 
@@ -432,8 +463,8 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         motorMarker?.let {
             mapView.overlays.remove(it)
         }
-        mapView.addOnFirstLayoutListener { v, left, top, right, bottom ->
-        motorMarker = Marker(mapView)}
+//        mapView.addOnFirstLayoutListener { v, left, top, right, bottom ->
+//        motorMarker = Marker(mapView)}
         val customMarker = MarkerMotor(this)
         motorMarker?.position = motorLocation
         motorMarker?.icon = customMarker.createMarker(ID_Motor)
@@ -455,11 +486,11 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         }
 
         // Create a new marker
-        mapView.addOnFirstLayoutListener { v, left, top, right, bottom ->
-        marker = Marker(mapView)}
+//        mapView.addOnFirstLayoutListener { v, left, top, right, bottom ->
+//        marker = Marker(mapView)}
         val customMarker = MarkerUser(this)
         marker?.position = userLocation
-        marker?.icon = customMarker.createMarker(nama_pemilik,R.drawable.ic_markerpemilik)
+        marker?.icon = customMarker.createMarker(nama_pemilik,R.drawable.ic_markeraparat3)
         marker?.title = "Status: $status\nName: $nama_pemilik\nHp : $noHp\n Distance from Bike : $jarakuser "
 
         // Add the marker overlay to the map
@@ -546,6 +577,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
                     markerUser(userLatitude,userLongitude)
                     addMotorMarker(motorLatitude,motorLongitude)
                     //panggil fungsi
+                    getDataMotor(ID_Motor)
                     perikasKemalingan()
                 }
             }
@@ -806,6 +838,48 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         editor.remove("id_motor")
         editor.remove("id_pemilik")
         editor.apply()
+    }
+    private fun Abaikan(){
+        val intent = Intent(this, MyForegroundService::class.java)
+        intent.action = MyForegroundService.ACTION_START_ABAIKAN
+        startService(intent)
+        startAbaikan()
+    }
+    private fun startAbaikan() {
+        notiFikasiJauh.visibility = View.GONE
+        Abaikan = true
+    }
+    private fun StopAbaikan() {
+        val intent = Intent(this, MyForegroundService::class.java)
+        intent.action = MyForegroundService.ACTION_STOP_ABAIKAN
+        startService(intent)
+        Abaikan = false
+    }
+    private fun laporkan(){
+        val userLocationRef = database.child("motor").child(ID_Motor)
+        userLocationRef.child("laporan").setValue(true)
+        val intent = Intent(this,LacakActivity::class.java)
+        startActivity(intent)
+        finishAffinity()
+    }
+
+    private fun jarakUserMotorHidup(mesin: Int){
+        if (Abaikan == false){
+            btnStopAbaikan.visibility = View.GONE
+        }else{
+            btnStopAbaikan.visibility = View.VISIBLE
+        }
+        val jarakUserMotorHidup = calculateEuclideanDistance(motorLatitude,motorLongitude,userLatitude,userLongitude)
+        if (mesin != 0 && jarakUserMotorHidup > 200 ){
+            Log.d("Abaikan ","$Abaikan")
+            if (Abaikan == false){
+                notiFikasiJauh.visibility = View.VISIBLE
+            }else{
+                notiFikasiJauh.visibility = View.GONE
+            }
+        }else{
+            notiFikasiJauh.visibility = View.GONE
+        }
     }
 }
 

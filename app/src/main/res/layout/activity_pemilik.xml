@@ -150,7 +150,7 @@
                         </androidx.cardview.widget.CardView>
                     </RelativeLayout>
 
-                    <!--tombol fokus motor-->
+                    <!--tombol fokus pemilik-->
                     <RelativeLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -172,7 +172,7 @@
                                 <ImageView
                                     android:layout_width="30dp"
                                     android:layout_height="30dp"
-                                    android:src="@drawable/ic_markerpemilik" />
+                                    android:src="@drawable/ic_markeraparat3" />
                             </LinearLayout>
                         </androidx.cardview.widget.CardView>
                     </RelativeLayout>
@@ -317,6 +317,70 @@
                             android:backgroundTint="#F44336"
                             android:text="Track"
                             android:textColor="@color/white"
+                            tools:ignore="TouchTargetSizeCheck,DuplicateClickableBoundsCheck" />
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+        </androidx.cardview.widget.CardView>
+        <!-- notifikasi Kejauhan-->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cv_notifikasikejauhan"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="350dp"
+            android:layout_marginEnd="25dp"
+            app:cardCornerRadius="30dp">
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="300dp"
+                android:layout_height="150dp"
+                app:cardBackgroundColor="@color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Watch out !!"
+                        android:textColor="@color/black"
+                        android:textSize="15dp"
+                        android:textStyle="bold"
+                        tools:ignore="TextSizeCheck" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="you are too far from the active motor"
+                        android:textColor="@color/black"
+                        android:textSize="12dp"
+                        tools:ignore="TextSizeCheck" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp">
+
+                        <Button
+                            android:id="@+id/btn_lacakkejauhan"
+                            android:layout_width="100dp"
+                            android:layout_height="40dp"
+                            android:backgroundTint="#F44336"
+                            android:text="Track"
+                            android:textColor="@color/white"
+                            tools:ignore="TouchTargetSizeCheck" />
+                        <Button
+                            android:id="@+id/btn_aktifkabJauh"
+                            android:layout_width="100dp"
+                            android:layout_height="40dp"
+                            android:text="Ignore"
+                            android:textColor="@color/white"
                             tools:ignore="TouchTargetSizeCheck" />
                     </LinearLayout>
                 </LinearLayout>
@@ -388,6 +452,26 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
+        </androidx.cardview.widget.CardView>
+
+        <!--tombol abaikan-->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cv_btnstopAbaikan"
+            app:cardCornerRadius="30dp"
+            app:cardBackgroundColor="#E91E63"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="580dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textSize="15dp"
+                android:padding="10dp"
+                android:text="Stop Ignoring"/>
         </androidx.cardview.widget.CardView>
 
     </RelativeLayout>

@@ -69,6 +69,7 @@
         </androidx.cardview.widget.CardView>
         <!--legenda-->
         <androidx.cardview.widget.CardView
+            android:visibility="gone"
             android:id="@+id/cv_legenda"
             app:cardCornerRadius="30dp"
             app:cardBackgroundColor="@color/white"

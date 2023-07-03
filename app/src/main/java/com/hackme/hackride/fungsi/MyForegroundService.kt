@@ -1,7 +1,11 @@
 package com.hackme.hackride.fungsi
 
 import android.Manifest
-import android.app.*
+import android.app.ActivityManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
@@ -10,18 +14,21 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
-import android.media.RingtoneManager
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import com.google.firebase.database.*
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.hackme.hackride.MainActivity
 import com.hackme.hackride.R
-import java.util.*
+import java.util.Timer
+import java.util.TimerTask
 
 class MyForegroundService : Service() {
 
@@ -33,6 +40,7 @@ class MyForegroundService : Service() {
     private var latPerkir : Double = 0.0
     private var longParkir : Double =0.0
     private var JarakUser : Int = 0
+    private var Abaikan : Boolean = false
 
     private lateinit var database: DatabaseReference
     private var status:String =""
@@ -43,12 +51,15 @@ class MyForegroundService : Service() {
     private var alertDialog: AlertDialog? = null
     private var timerServis: Timer? = null
     private var timerData: Timer? = null
+    private var timerAbaikan: Timer? = null
     private var isServiceRunning = false
     private var isLoggedOut = false
     private var id_user : String =""
 
     companion object {
         const val ACTION_STOP_LOCATION_COMPARISON = "com.hackme.hackride.STOP_LOCATION_COMPARISON"
+        const val ACTION_START_ABAIKAN = "com.hackme.hackride.ACTION_START_ABAIKAN"
+        const val ACTION_STOP_ABAIKAN = "com.hackme.hackride.ACTION_STOP_ABAIKAN"
         private var instance: MyForegroundService? = null
         fun getInstance(): MyForegroundService? {
             return instance
@@ -96,7 +107,12 @@ class MyForegroundService : Service() {
             startAmbildata()
             instance = this // Set instance MyForegroundService
         }
+        when (intent?.action) {
+            ACTION_START_ABAIKAN -> startAbaikan()
+            ACTION_STOP_ABAIKAN -> stopAbaikan()
+        }
         return START_STICKY
+
     }
 
 
@@ -141,7 +157,6 @@ class MyForegroundService : Service() {
                         }else{
                             mesinMotor ="Active"
                         }
-//                        compareDistanceToParking(latitude, longitude, latitudeParkir, longitudeParkir, mesin)
                     }
                 } else {
                     // Data motor dengan id_motor tersebut tidak ditemukan
@@ -164,12 +179,12 @@ class MyForegroundService : Service() {
                     return
                 }
 //                getUserLocation()
-//                getDataMotor(idMotor)
+                 jarakUserMotorHidup(inMesin)
                 compareDistanceToParking(latitudeMotor, longitudeMotor, latPerkir, longParkir, inMesin)
 
             }
         }
-        timerServis?.schedule(timerTask, 0, 5000)
+        timerServis?.schedule(timerTask, 0, 1000)
     }
     private fun startAmbildata() {
         timerData = Timer()
@@ -186,6 +201,13 @@ class MyForegroundService : Service() {
             }
         }
         timerData?.schedule(timerTask, 0, 1000)
+    }
+
+    private fun startAbaikan() {
+        Abaikan = true
+    }
+    private fun stopAbaikan() {
+        Abaikan = false
     }
 
 
@@ -244,6 +266,41 @@ class MyForegroundService : Service() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(2)
     }
+
+    private fun showHeadsUpNotification1(title: String, message: String) {
+        val channelId = "heads_up_channel_id"
+        val channelName = "Heads Up Channel"
+
+        // Buat intent untuk dijalankan saat notifikasi ditekan
+        val intent = Intent(this, MainActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+
+        // Membuat notifikasi dengan tipe heads-up
+        val notificationBuilder = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.drawable.logoappbgputihblt)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+
+        // Menampilkan notifikasi sebagai heads-up notification
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH)
+            notificationManager.createNotificationChannel(channel)
+        }
+        notificationManager.notify(3, notificationBuilder.build())
+    }
+
+    private fun cancelNotification1() {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(3)
+    }
+
 
 
 
@@ -403,6 +460,45 @@ class MyForegroundService : Service() {
             }
         }
 
+    }
+    private fun cekAktiviti1(){
+        val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val runningActivities = activityManager.getRunningTasks(1)
+
+        if (runningActivities.isNotEmpty()) {
+            val topActivity = runningActivities[0].topActivity
+            val packageName = topActivity?.packageName
+            val className = topActivity?.className
+            Log.d("aktifitas","$packageName   $className")
+
+            // Lakukan pengecekan packageName dan className untuk menentukan aktivitas yang sedang aktif
+            if (packageName == "com.hackme.hackride" && className == "com.hackme.hackride.activity.LacakActivity") {
+                // Lakukan tindakan sesuai dengan aktivitas LacakActivity yang sedang aktif
+                cancelNotification1()
+            }
+            else{
+                showHeadsUpNotification1("you are too far from the active motor", "Distance from you $JarakUser m")
+            }
+        }
+
+    }
+    private fun jarakUserMotorHidup(mesin: Int){
+        val jarakUserMotorHidup = com.hackme.hackride.fungsi.calculateEuclideanDistance(
+            latitudeMotor,
+            longitudeMotor,
+            latUser,
+            longUser
+        )
+        if (mesin != 0 && jarakUserMotorHidup > 200 ){
+            Log.d("abaikan","$Abaikan")
+            if (Abaikan == false){
+                cekAktiviti1()
+            }else{
+                cancelNotification1()
+            }
+        }else{
+            cancelNotification1()
+        }
     }
 
 }

@@ -541,6 +541,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
                     val latitudeParkir = dataSnapshot.child("latitudeparkir").getValue(Double::class.java)
                     val longitudeParkir = dataSnapshot.child("longitudeparkir").getValue(Double::class.java)
                     val idPemilik = dataSnapshot.child("id_pemilik").getValue(String::class.java)
+                    val laporan = dataSnapshot.child("laporan").getValue(Boolean::class.java)
                     if (latitude != null && longitude != null && latitudeParkir != null && longitudeParkir != null && mesin != null && getaran != null&& idPemilik != null) {
                         val jarakAman = calculateEuclideanDistance(latitude,longitude,latitudeParkir,longitudeParkir)
                         val jarakAparat = calculateEuclideanDistance(latAparat,longAparat,latitude,longitude)
@@ -551,6 +552,20 @@ class AparatActivity : AppCompatActivity(), LocationListener {
                             val kasusData = DataKasus(idAparat,statusAparat,id_motor,idPemilik)
                             saveDataKasus(kasusData)
                         }else{
+                            notifKasus.visibility = hilang
+                            hapusDataKasus()
+                        }
+                    }
+                    if (laporan == true && latitude != null && longitude != null&&idPemilik!= null ){
+                        val jarakAparat = calculateEuclideanDistance(latAparat, longAparat, latitude, longitude)
+                        val bulat = Math.round(jarakAparat)
+                        if (jarakAparat < 10000){
+                            notifKasus.visibility = nampak
+                            teksNotifKasus.text = "The motor with id $id_motor has been stolen\ndistance from you $bulat m"
+                            val kasusData = DataKasus(idAparat,statusAparat,id_motor,idPemilik)
+                            saveDataKasus(kasusData)
+                        }else {
+                            // Lakukan sesuatu jika kondisi tidak memenuhi
                             notifKasus.visibility = hilang
                             hapusDataKasus()
                         }

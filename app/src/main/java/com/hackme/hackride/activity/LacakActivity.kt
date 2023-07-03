@@ -4,11 +4,14 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
+import android.widget.EditText
 import android.widget.TextView
+import androidx.cardview.widget.CardView
 import androidx.core.view.isNotEmpty
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -17,6 +20,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
 import com.hackme.hackride.R
+import com.hackme.hackride.database.UserLacak
 import com.hackme.hackride.fungsi.AparatService
 import com.hackme.hackride.fungsi.MarkerMotor
 import com.hackme.hackride.fungsi.MarkerUser
@@ -27,13 +31,19 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.compass.CompassOverlay
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
 import java.sql.Time
+import java.util.Random
 import java.util.Timer
 import java.util.TimerTask
 
 class LacakActivity : AppCompatActivity() {
+
+    // pesan
+    private lateinit var PesanTeks: EditText
+    private lateinit var btnKirimPesan : CardView
     //data kasus
     private var Id_User : String = ""
     private var Id_Motor : String =""
@@ -60,6 +70,12 @@ class LacakActivity : AppCompatActivity() {
     private var motorMarker : Marker? = null
     private var marker: Marker? = null
     private var markerAparat:Marker? = null
+    private val markerMap: HashMap<String, Marker> = HashMap()
+    private val polylineMap: MutableMap<String, Polyline> = HashMap()
+    private var polylinePemilik: Polyline? = null
+    private var polylineAparat: Polyline? = null
+    private val markerPesanMap: MutableMap<String, String> = mutableMapOf()
+    //list aparat
 
     //legenda
     private lateinit var tvIdMotor: TextView
@@ -88,6 +104,7 @@ class LacakActivity : AppCompatActivity() {
         //inisialisasi lengenda
         tvIdMotor = findViewById(R.id.tv_MarkerMotor)
         mulaiMenuLacak()
+
     }
 
 
@@ -171,6 +188,7 @@ class LacakActivity : AppCompatActivity() {
                     val getaran = dataSnapshot.child("getaran").getValue(Boolean::class.java)
                     val latitudeParkir = dataSnapshot.child("latitudeparkir").getValue(Double::class.java)
                     val longitudeParkir = dataSnapshot.child("longitudeparkir").getValue(Double::class.java)
+                    val laporan = dataSnapshot.child("laporan").getValue(Boolean::class.java)
 
                     if (latitude != null && longitude != null && latitudeParkir != null && longitudeParkir != null && mesin != null && getaran != null) {
                         GetaranMotor = getaran
@@ -185,6 +203,9 @@ class LacakActivity : AppCompatActivity() {
                         longParkir = longitudeParkir
                         Log.d("data motor","$latMotor")
                         addMotorMarker(latitude,longitude)
+                        if (laporan == false){
+
+                        }
                     }
                     // Lakukan sesuatu dengan data yang telah diambil
                     // Contoh: tampilkan data di logcat
@@ -250,9 +271,6 @@ class LacakActivity : AppCompatActivity() {
         motorMarker?.let {
             maps.overlays.remove(it)
         }
-        maps.addOnFirstLayoutListener { v, left, top, right, bottom ->
-            Log.d("masuk buat maps","masuk")
-            }
         val customMarker = MarkerMotor(this)
         motorMarker?.position = motorLocation
         motorMarker?.icon = customMarker.createMarker(Id_Motor)
@@ -266,18 +284,39 @@ class LacakActivity : AppCompatActivity() {
     }
 
     // fungsi data user
-    fun countChildren(childPath: String, callback: (List<String>) -> Unit) {
+    fun countChildren(childPath: String){
         databaseReference.child(childPath).addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
                 val count = dataSnapshot.childrenCount.toInt()
-                val childNames = mutableListOf<String>()
+                val childNames = mutableListOf<UserLacak>()
 
                 dataSnapshot.children.forEach { childSnapshot ->
-                    val childName = childSnapshot.key
-                    childName?.let { childNames.add(it) }
+                    val type = childSnapshot.child("type").getValue(String::class.java)
+                    val latitude = childSnapshot.child("latitude").getValue(Double::class.java)
+                    val longitude = childSnapshot.child("longitude").getValue(Double::class.java)
+                    val hp = childSnapshot.child("hp").getValue(String::class.java)
+                    val nama = childSnapshot.child("nama").getValue(String::class.java)
+                    val pesan = childSnapshot.child("pesan").getValue(String::class.java)
+                    val ikut = childSnapshot.child("ikut").getValue(Boolean::class.java)
+                    val userId = childSnapshot.key
+                    if (userId !=null && pesan!= null && latitude != null && longitude != null && hp != null && type != null && nama != null && ikut != null )
+                    {
+                        if (userId == Id_User){
+                            latUser = latitude
+                            longUser = longitude
+                        }
+                        if (type == "Aparat"){
+                            val user = UserLacak(userId, hp, nama, latitude, longitude,ikut,pesan,type)
+                            childNames.add(user)
+                        }
+                        if (type =="Pemilik" && userId == Id_Pemilik){
+                            val user = UserLacak(userId, hp, nama, latitude, longitude,ikut,pesan,type)
+                            childNames.add(user)
+                        }
+                    }
                 }
-
-                callback(childNames)
+                Log.d("lis ", "$childNames")
+                markerUser(childNames)
             }
 
             override fun onCancelled(databaseError: DatabaseError) {
@@ -285,101 +324,124 @@ class LacakActivity : AppCompatActivity() {
             }
         })
     }
-    private fun dataUser(UserId : String){
-        val userRef = databaseReference.child("users").child(UserId)
-        userRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                if (dataSnapshot.exists()) {
-                    val latitude = dataSnapshot.child("latitude").getValue(Double::class.java)
-                    val longitude = dataSnapshot.child("longitude").getValue(Double::class.java)
-                    val hp = dataSnapshot.child("hp").getValue(String::class.java)
-                    val type = dataSnapshot.child("type").getValue(String::class.java)
-                    val nama = dataSnapshot.child("nama").getValue(String::class.java)
-                    val pesan = dataSnapshot.child("pesan").getValue(String::class.java)
-                    val ikut = dataSnapshot.child("ikut").getValue(Boolean::class.java)
-
-                    if (latitude != null && longitude != null && hp != null && type != null && nama != null && ikut != null ) {
-                        noHp = hp
-                        ikutUser = ikut
-                        if (UserId == Id_User){
-                            jarakUser = Math.round(calculateEuclideanDistance(latitude,latitude,latMotor,longMotor))
-                        }
-                        if (type == "Aparat"){
-                            markerAparat(latitude,longitude,nama,hp,type)
-                        }
-                        if (UserId == Id_Pemilik){
-                            markerPemilik(latitude,longitude,nama,hp,type)
-                        }
-                        if (pesan != null){
-
-                        }else{
-
-                        }
-
-                    }
-                    // Lakukan sesuatu dengan data yang telah diambil
-                    // Contoh: tampilkan data di logcat
-                    Log.d("Data user", "Latitude: $latitude, Longitude: $longitude")
-                } else {
-                    // Data motor dengan id_motor tersebut tidak ditemukan
-                }
-            }
-
-            override fun onCancelled(databaseError: DatabaseError) {
-                // Terjadi kesalahan saat mengambil data dari Firebase
-                Log.e("Data Motor", "Error: ${databaseError.message}")
-            }
-        })
-    }
 
 
     //fungsi marker
-    private fun markerAparat(latitude: Double, longitude: Double, namaAparat: String, hpAparat: String, statusAparat: String) {
+    private fun markerUser(users: List<UserLacak>) {
+        // Generate a random color
+        val colorList = listOf(
+            Color.RED,
+            Color.GREEN,
+            Color.BLUE,
+            Color.YELLOW,
+            Color.CYAN,
+            Color.MAGENTA
+        )
+        for (User in users) {
+            val aparatIndex = users.indexOf(User)
+            val colorr = colorList[aparatIndex % colorList.size]
+            val aparatId = User.userId
+            val latitude = User.latitude
+            val longitude = User.longitude
+            val hp = User.hp
+            val nama = User.nama
+            val ikut = User.ikut
+            val type = User.type
+            val pesan = User.pesan
+            val motorLocation = GeoPoint(latMotor, longMotor)
             val userLocation = GeoPoint(latitude, longitude)
             val jarakAparat = Math.round(calculateEuclideanDistance(latMotor, longMotor, latitude, longitude))
+            val jarakAparatL = calculateEuclideanDistance(latMotor, longMotor, latitude, longitude)
 
-            // Remove existing marker from overlays if it exists
+            // Check if the pesan has changed for this aparat
+            val previousPesan = markerPesanMap[aparatId]
+            if (previousPesan != pesan) {
+                // Show info window on the marker if the pesan has changed
+                val markerAparat = markerMap[aparatId]
+                markerAparat?.showInfoWindow()
+                // Focus the map to the marker's position
+                markerAparat?.let {
+                    maps.controller.animateTo(it.position)
+                }
+            }
+
+            // Save the new pesan value in the markerPesanMap
+            markerPesanMap[aparatId] = pesan
+
+            // Check if the marker already exists for this aparat
+            if (markerMap.containsKey(aparatId)) {
+                // If marker exists, update its position
+                val markerAparat = markerMap[aparatId]
+                markerAparat?.position = userLocation
+                markerAparat?.title = "Status: $type\nName: $nama\nHp: $hp\nDistance: $jarakAparat m"
+                markerAparat?.subDescription = "Chat: $pesan"
+            } else {
+                // If marker doesn't exist, create a new one
+                val customMarker = MarkerUser(this)
+                val markerAparat = Marker(maps)
+                markerAparat.position = userLocation
+                if (type == "Aparat"){
+                    markerAparat.icon = customMarker.createMarker(nama, R.drawable.ic_markeraparat4)
+                } else{
+                    markerAparat.icon = customMarker.createMarker(nama, R.drawable.ic_markeraparat3)
+                }
+
+                markerAparat.title = "Status: $type\nName: $nama\nHp: $hp\nDistance: $jarakAparat m"
+                markerAparat.subDescription = "Chat: $pesan"
+
+                // Add the new marker to the map and store its reference in the markerMap
+                maps.overlays.add(markerAparat)
+                markerMap[aparatId] = markerAparat
+            }
+
+            if (jarakAparatL < 10000) {
+                // Hapus polyline sebelumnya jika ada
+                val previousPolyline = polylineMap[aparatId]
+                previousPolyline?.let {
+                    maps.overlays.remove(it)
+                }
+
+                // Buat polyline baru
+                val polylineAparat = Polyline().apply {
+                    addPoint(motorLocation)
+                    addPoint(userLocation)
+                    color = colorr
+                    width = 8f
+                }
+
+                // Tambahkan polyline baru ke map dan simpan referensinya dalam polylineMap
+                maps.overlays.add(polylineAparat)
+                polylineMap[aparatId] = polylineAparat
+            } else {
+                // Hapus polyline sebelumnya jika ada
+                val previousPolyline = polylineMap[aparatId]
+                previousPolyline?.let {
+                    maps.overlays.remove(it)
+                }
+            }
+        }
+
+        // Hapus marker dan polyline untuk aparat yang tidak lagi ada
+        val aparatIdsToRemove = markerMap.keys.filter { aparatId -> users.none { it.userId == aparatId } }
+        for (aparatId in aparatIdsToRemove) {
+            val marker = markerMap[aparatId]
             marker?.let {
                 maps.overlays.remove(it)
+                markerMap.remove(aparatId)
             }
 
-            // Create a new marker
-
-            val customMarker = MarkerUser(this)
-            marker?.position = userLocation
-            marker?.icon = customMarker.createMarker(namaAparat, R.drawable.ic_markeraparat4)
-            marker?.title = "Status: $statusAparat\nName: $namaAparat\nHp: $hpAparat\nDistance: $jarakAparat m"
-
-            // Add the marker overlay to the map
-            marker?.let {
-                maps.overlays.add(it)
+            val polyline = polylineMap[aparatId]
+            polyline?.let {
+                maps.overlays.remove(it)
+                polylineMap.remove(aparatId)
             }
-
-            // Invalidate the map view to refresh the display
-            maps.invalidate()
-    }
-
-    private fun markerPemilik(latitude: Double, longitude: Double, namaPemilik :String, hpPemilik : String, statusPemilik :String){
-        val userLocation = GeoPoint(latitude,longitude)
-        // Remove existing marker from overlays if it exists
-        val jarakPemilik = Math.round(calculateEuclideanDistance(latMotor,longMotor,latitude,longitude))
-        markerAparat?.let {
-            maps.overlays.remove(it)
-        }
-        // Create a new marker
-        val customMarker = MarkerUser(this)
-        markerAparat?.position = userLocation
-        markerAparat?.icon = customMarker.createMarker(namaPemilik,R.drawable.ic_markerpemilik)
-        markerAparat?.title = "Status: $statusPemilik\nName: $namaPemilik\nHp : $hpPemilik\n Distance : $jarakPemilik m "
-
-        // Add the marker overlay to the map
-        markerAparat?.let {
-            maps.overlays.add(it)
         }
 
         // Invalidate the map view to refresh the display
         maps.invalidate()
     }
+
+
 
     //fungsi timer
     private fun startClockData() {
@@ -393,11 +455,7 @@ class LacakActivity : AppCompatActivity() {
                     // Panggil fungsi updateData() atau kode pembaruan data lainnya di sini
                     AmbildataMotor()
                     val childPath = "users"
-                    countChildren(childPath) { childNames ->
-                        childNames.forEach { childName ->
-                            dataUser(childName)
-                        }
-                    }
+                    countChildren(childPath)
                 }
             }
         }, 0, 1000) // Menjalankan tugas setiap 1000 milidetik (1 detik)

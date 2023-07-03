@@ -25,6 +25,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.ktx.getValue
 import com.hackme.hackride.MainActivity
 import com.hackme.hackride.R
 import com.hackme.hackride.activity.PemilikActivity
@@ -141,6 +142,7 @@ class AparatService : Service() {
                     val getaran = dataSnapshot.child("getaran").getValue(Boolean::class.java)
                     val latitudeParkir = dataSnapshot.child("latitudeparkir").getValue(Double::class.java)
                     val longitudeParkir = dataSnapshot.child("longitudeparkir").getValue(Double::class.java)
+                    val laporan = dataSnapshot.child("laporan").getValue(Boolean::class.java)
 
                     if (latitude != null && longitude != null && latitudeParkir != null && longitudeParkir != null && mesin != null && getaran != null) {
                         val jarakAman = calculateEuclideanDistance(latitude, longitude, latitudeParkir, longitudeParkir)
@@ -148,7 +150,7 @@ class AparatService : Service() {
                         val bulat = Math.round(jarakAparat)
                         Log.d("notif seharusnya muncul","$mesin  $jarakAman  $jarakAparat")
                         if (mesin == 0 && jarakAman > 50 && jarakAparat < 10000) {
-                            // Lakukan sesuatu jika kondisi memenuhi
+                            // Kirim data ke Realtime Database Firebase
                             Log.d("notif seharusnya muncul","$mesin  $jarakAman  $jarakAparat")
                             cekAktiviti(id_motor,bulat)
                         } else {
@@ -156,6 +158,16 @@ class AparatService : Service() {
                             cancelNotification()
                         }
                     }
+                    if (laporan == true && latitude != null && longitude != null ){
+                        val jarakAparat = calculateEuclideanDistance(latAparat, longAparat, latitude, longitude)
+                        val bulat = Math.round(jarakAparat)
+                        if (jarakAparat < 10000){
+                            cekAktiviti1(id_motor,bulat)
+                        }else {
+                            // Lakukan sesuatu jika kondisi tidak memenuhi
+                            cancelNotification1()
+                        }
+                    }else{cancelNotification1()}
                     // Lakukan sesuatu dengan data yang telah diambil
                     // Contoh: tampilkan data di logcat
                     Log.d("Data Motor", "Latitude: $latitude, Longitude: $longitude, Mesin: $mesin, Getaran: $getaran, Latitude Parkir: $latitudeParkir, Longitude Parkir: $longitudeParkir")
@@ -312,6 +324,63 @@ class AparatService : Service() {
             }
             else{
                 showHeadsUpNotification("A theft case has occurred","Id $idMotor distance from you $JarakAparat m")
+            }
+        }
+
+    }
+
+    private fun showHeadsUpNotification1(title: String, message: String) {
+        val channelId = "heads_up_channel_id"
+        val channelName = "Heads Up Channel"
+
+        // Buat intent untuk dijalankan saat notifikasi ditekan
+        val intent = Intent(this, MainActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+
+        // Membuat notifikasi dengan tipe heads-up
+        val notificationBuilder = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.drawable.logoappbgputihblt)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+
+        // Menampilkan notifikasi sebagai heads-up notification
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH)
+            notificationManager.createNotificationChannel(channel)
+        }
+        notificationManager.notify(3, notificationBuilder.build())
+    }
+
+    private fun cancelNotification1() {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(3)
+    }
+
+    //fungsi cek aktifitas sekarang
+    private fun cekAktiviti1(idMotor: String, JarakAparat: Long){
+        val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val runningActivities = activityManager.getRunningTasks(1)
+
+        if (runningActivities.isNotEmpty()) {
+            val topActivity = runningActivities[0].topActivity
+            val packageName = topActivity?.packageName
+            val className = topActivity?.className
+            Log.d("aktifitas","$packageName   $className")
+
+            // Lakukan pengecekan packageName dan className untuk menentukan aktivitas yang sedang aktif
+            if (packageName == "com.hackme.hackride" && className == "com.hackme.hackride.activity.LacakActivity") {
+                // Lakukan tindakan sesuai dengan aktivitas LacakActivity yang sedang aktif
+                cancelNotification1()
+            }
+            else{
+                showHeadsUpNotification1("A theft case has occurred","Id $idMotor distance from you $JarakAparat m")
             }
         }
 

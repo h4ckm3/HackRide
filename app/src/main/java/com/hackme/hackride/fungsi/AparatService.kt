@@ -10,12 +10,10 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.location.Criteria
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Build
-import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.ActivityCompat
@@ -25,10 +23,8 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.getValue
 import com.hackme.hackride.MainActivity
 import com.hackme.hackride.R
-import com.hackme.hackride.activity.PemilikActivity
 import java.util.Timer
 import java.util.TimerTask
 
@@ -133,19 +129,20 @@ class AparatService : Service() {
 
     private fun getDataMotor(id_motor: String) {
         val motorRef = databaseRef.child("motor").child(id_motor)
-        motorRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                if (dataSnapshot.exists()) {
+        motorRef.get().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val dataSnapshot = task.result
+                if (dataSnapshot != null && dataSnapshot.exists()) {
                     val latitude = dataSnapshot.child("latitude").getValue(Double::class.java)
                     val longitude = dataSnapshot.child("longitude").getValue(Double::class.java)
                     val mesin = dataSnapshot.child("mesin").getValue(Int::class.java)
                     val getaran = dataSnapshot.child("getaran").getValue(Boolean::class.java)
-                    val latitudeParkir = dataSnapshot.child("latitudeparkir").getValue(Double::class.java)
-                    val longitudeParkir = dataSnapshot.child("longitudeparkir").getValue(Double::class.java)
+                    val latitudedipakai = dataSnapshot.child("latitudepdipakai").getValue(Double::class.java)
+                    val longitudedipakai = dataSnapshot.child("longitudedipakai").getValue(Double::class.java)
                     val laporan = dataSnapshot.child("laporan").getValue(Boolean::class.java)
 
-                    if (latitude != null && longitude != null && latitudeParkir != null && longitudeParkir != null && mesin != null && getaran != null) {
-                        val jarakAman = calculateEuclideanDistance(latitude, longitude, latitudeParkir, longitudeParkir)
+                    if (latitude != null && longitude != null && latitudedipakai != null && longitudedipakai != null && mesin != null && getaran != null) {
+                        val jarakAman = calculateEuclideanDistance(latitude, longitude, latitudedipakai, longitudedipakai)
                         val jarakAparat = calculateEuclideanDistance(latAparat, longAparat, latitude, longitude)
                         val bulat = Math.round(jarakAparat)
                         Log.d("notif seharusnya muncul","$mesin  $jarakAman  $jarakAparat")
@@ -170,18 +167,18 @@ class AparatService : Service() {
                     }else{cancelNotification1()}
                     // Lakukan sesuatu dengan data yang telah diambil
                     // Contoh: tampilkan data di logcat
-                    Log.d("Data Motor", "Latitude: $latitude, Longitude: $longitude, Mesin: $mesin, Getaran: $getaran, Latitude Parkir: $latitudeParkir, Longitude Parkir: $longitudeParkir")
+                    Log.d("Data Motor", "Latitude: $latitude, Longitude: $longitude, Mesin: $mesin, Getaran: $getaran, Latitude Parkir: $latitudedipakai, Longitude Parkir: $longitudedipakai")
                 } else {
                     // Data motor dengan id_motor tersebut tidak ditemukan
                 }
-            }
-
-            override fun onCancelled(databaseError: DatabaseError) {
+            } else {
                 // Terjadi kesalahan saat mengambil data dari Firebase
-                Log.e("Data Motor", "Error: ${databaseError.message}")
+                val exception = task.exception
+                Log.e("Data Motor", "Error: ${exception?.message}")
             }
-        })
+        }
     }
+
 
     private fun getUserLocation(): Location? {
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
@@ -234,6 +231,7 @@ class AparatService : Service() {
                 if (isLoggedOut) {
                     // Jika telah logout, batalkan pemanggilan getDataMotor() dan getUserLocation()
                     timerData?.cancel()
+                    timerData == null
                     return
                 }
                 getUserLocation()

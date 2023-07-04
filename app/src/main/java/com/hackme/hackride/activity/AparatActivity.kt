@@ -28,14 +28,11 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.getValue
 import com.hackme.hackride.R
 import com.hackme.hackride.R.layout.activity_aparat
-import com.hackme.hackride.database.AparatData
 import com.hackme.hackride.database.DataKasus
 import com.hackme.hackride.fungsi.AparatService
 import com.hackme.hackride.fungsi.MarkerUser
-import com.hackme.hackride.fungsi.MyForegroundService
 import com.hackme.hackride.fungsi.calculateEuclideanDistance
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -195,6 +192,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         val startServiceIntent = Intent(this, AparatService::class.java)
         startServiceIntent.putExtra("USER_ID", idAparat)
         startService(startServiceIntent)
+        marker = Marker(maps)
     }
 
     //fungsi
@@ -204,11 +202,11 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         // Menghentikan AparatService
         val stopServiceIntent = Intent(this, AparatService::class.java)
         stopService(stopServiceIntent)
-        Intent(this, PemilikActivity::class.java).flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
-        finishAffinity()
+        Intent(this, AparatService::class.java).flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
         startActivity(intent)
         hapusDataAparat()
-
+        finishAffinity()
     }
     //lokasi user
 
@@ -388,8 +386,8 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         }
 
         // Create a new marker
-        maps.addOnFirstLayoutListener { v, left, top, right, bottom ->
-            marker = Marker(maps)}
+//        maps.addOnFirstLayoutListener { v, left, top, right, bottom ->
+//            marker = Marker(maps)}
         val customMarker = MarkerUser(this)
         marker?.position = userLocation
         marker?.icon = customMarker.createMarker(namaAparat,R.drawable.ic_markeraparat4)
@@ -531,59 +529,60 @@ class AparatActivity : AppCompatActivity(), LocationListener {
 
     private fun getDataMotor(id_motor: String) {
         val motorRef = databaseRef.child("motor").child(id_motor)
-        motorRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                if (dataSnapshot.exists()) {
+        motorRef.get().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val dataSnapshot = task.result
+                if (dataSnapshot != null && dataSnapshot.exists()) {
                     val latitude = dataSnapshot.child("latitude").getValue(Double::class.java)
                     val longitude = dataSnapshot.child("longitude").getValue(Double::class.java)
                     val mesin = dataSnapshot.child("mesin").getValue(Int::class.java)
                     val getaran = dataSnapshot.child("getaran").getValue(Boolean::class.java)
-                    val latitudeParkir = dataSnapshot.child("latitudeparkir").getValue(Double::class.java)
-                    val longitudeParkir = dataSnapshot.child("longitudeparkir").getValue(Double::class.java)
+                    val latitudedipakai = dataSnapshot.child("latitudedipakai").getValue(Double::class.java)
+                    val longitudedipakai = dataSnapshot.child("longitudipakai").getValue(Double::class.java)
                     val idPemilik = dataSnapshot.child("id_pemilik").getValue(String::class.java)
                     val laporan = dataSnapshot.child("laporan").getValue(Boolean::class.java)
-                    if (latitude != null && longitude != null && latitudeParkir != null && longitudeParkir != null && mesin != null && getaran != null&& idPemilik != null) {
-                        val jarakAman = calculateEuclideanDistance(latitude,longitude,latitudeParkir,longitudeParkir)
-                        val jarakAparat = calculateEuclideanDistance(latAparat,longAparat,latitude,longitude)
+
+                    if (latitude != null && longitude != null && latitudedipakai != null && longitudedipakai != null && mesin != null && getaran != null&& idPemilik != null) {
+                        val jarakAman = calculateEuclideanDistance(latitude, longitude, latitudedipakai, longitudedipakai)
+                        val jarakAparat = calculateEuclideanDistance(latAparat, longAparat, latitude, longitude)
                         val bulatJarakaparat = Math.round(jarakAparat)
-                        if (mesin == 0 && jarakAman > 50 && jarakAparat < 10000){
+                        if (mesin == 0 && jarakAman > 50 && jarakAparat < 10000) {
                             notifKasus.visibility = nampak
                             teksNotifKasus.text = "The motor with id $id_motor has been stolen\ndistance from you $bulatJarakaparat m"
-                            val kasusData = DataKasus(idAparat,statusAparat,id_motor,idPemilik)
+                            val kasusData = DataKasus(idAparat, statusAparat, id_motor, idPemilik)
                             saveDataKasus(kasusData)
-                        }else{
+                        } else {
                             notifKasus.visibility = hilang
                             hapusDataKasus()
                         }
                     }
-                    if (laporan == true && latitude != null && longitude != null&&idPemilik!= null ){
+                    if (laporan == true && latitude != null && longitude != null && idPemilik != null) {
                         val jarakAparat = calculateEuclideanDistance(latAparat, longAparat, latitude, longitude)
                         val bulat = Math.round(jarakAparat)
-                        if (jarakAparat < 10000){
+                        if (jarakAparat < 10000) {
                             notifKasus.visibility = nampak
                             teksNotifKasus.text = "The motor with id $id_motor has been stolen\ndistance from you $bulat m"
-                            val kasusData = DataKasus(idAparat,statusAparat,id_motor,idPemilik)
+                            val kasusData = DataKasus(idAparat, statusAparat, id_motor, idPemilik)
                             saveDataKasus(kasusData)
-                        }else {
-                            // Lakukan sesuatu jika kondisi tidak memenuhi
+                        } else {
                             notifKasus.visibility = hilang
                             hapusDataKasus()
                         }
                     }
                     // Lakukan sesuatu dengan data yang telah diambil
                     // Contoh: tampilkan data di logcat
-                    Log.d("Data Motor", "Latitude: $latitude, Longitude: $longitude, Mesin: $mesin, Getaran: $getaran, Latitude Parkir: $latitudeParkir, Longitude Parkir: $longitudeParkir")
+                    Log.d("Data Motor Aparat aktifiti", "Latitude: $latitude, Longitude: $longitude, Mesin: $mesin, Getaran: $getaran, Latitude Parkir: $latitudedipakai, Longitude Parkir: $longitudedipakai")
                 } else {
                     // Data motor dengan id_motor tersebut tidak ditemukan
                 }
-            }
-
-            override fun onCancelled(databaseError: DatabaseError) {
+            } else {
                 // Terjadi kesalahan saat mengambil data dari Firebase
-                Log.e("Data Motor", "Error: ${databaseError.message}")
+                val exception = task.exception
+                Log.e("Data Motor", "Error: ${exception?.message}")
             }
-        })
+        }
     }
+
 
     //fungsi timer
     private fun startClockData() {
@@ -594,12 +593,12 @@ class AparatActivity : AppCompatActivity(), LocationListener {
                 // Kode untuk pembaruan data setiap detik
                 runOnUiThread {
                     markerUser(latAparat,longAparat)
-                    // Panggil fungsi updateData() atau kode pembaruan data lainnya di sini
-                    val childPath = "motor"
-                    countChildren(childPath) { childNames ->
-                        childNames.forEach { childName ->
-                            getDataMotor(childName)
-                        }
+                }
+                // Panggil fungsi updateData() atau kode pembaruan data lainnya di sini
+                val childPath = "motor"
+                countChildren(childPath) { childNames ->
+                    childNames.forEach { childName ->
+                        getDataMotor(childName)
                     }
                 }
             }

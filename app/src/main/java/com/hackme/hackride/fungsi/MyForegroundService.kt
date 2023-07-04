@@ -141,15 +141,15 @@ class MyForegroundService : Service() {
                     val longitude = dataSnapshot.child("longitude").getValue(Double::class.java)
                     val mesin = dataSnapshot.child("mesin").getValue(Int::class.java)
                     val getaran = dataSnapshot.child("getaran").getValue(Boolean::class.java)
-                    val latitudeParkir = dataSnapshot.child("latitudeparkir").getValue(Double::class.java)
-                    val longitudeParkir = dataSnapshot.child("longitudeparkir").getValue(Double::class.java)
+                    val latitudedipakai = dataSnapshot.child("latitudedipakai").getValue(Double::class.java)
+                    val longitudedipakai = dataSnapshot.child("longitudedipakai").getValue(Double::class.java)
 
-                    if (latitude != null && longitude != null && latitudeParkir != null && longitudeParkir != null && mesin != null&& getaran != null) {
-                        Log.d("Data Motor", "Latitude: $latitude, Longitude: $longitude, Mesin: $mesin, Latitude Parkir: $latitudeParkir, Longitude Parkir: $longitudeParkir")
+                    if (latitude != null && longitude != null && latitudedipakai != null && longitudedipakai != null && mesin != null&& getaran != null) {
+                        Log.d("Data Motor", "Latitude: $latitude, Longitude: $longitude, Mesin: $mesin, Latitude Parkir: $latitudedipakai, Longitude Parkir: $longitudedipakai")
                         latitudeMotor = latitude
                         longitudeMotor = longitude
-                        latPerkir = latitudeParkir
-                        longParkir = longitudeParkir
+                        latPerkir = latitudedipakai
+                        longParkir = longitudedipakai
                         getaranMotor = getaran
                         inMesin = mesin
                         if (mesin == 0){
@@ -176,6 +176,7 @@ class MyForegroundService : Service() {
                 if (isLoggedOut) {
                     // Jika telah logout, batalkan pemanggilan getDataMotor() dan getUserLocation()
                     timerServis?.cancel()
+                    timerServis == null
                     return
                 }
 //                getUserLocation()
@@ -193,10 +194,12 @@ class MyForegroundService : Service() {
                 if (isLoggedOut) {
                     // Jika telah logout, batalkan pemanggilan getDataMotor() dan getUserLocation()
                     timerData?.cancel()
+                    timerData == null
                     return
                 }
                 getUserLocation()
                 getDataMotor(idMotor)
+                jarakUserMotorHidup(inMesin)
 
             }
         }
@@ -478,6 +481,7 @@ class MyForegroundService : Service() {
             }
             else{
                 showHeadsUpNotification1("you are too far from the active motor", "Distance from you $JarakUser m")
+                Log.d("notifikasi jaun muncul","$packageName   $className")
             }
         }
 
@@ -499,6 +503,10 @@ class MyForegroundService : Service() {
         }else{
             cancelNotification1()
         }
+    }
+
+    private fun stopSemuaTimer(){
+
     }
 
 }

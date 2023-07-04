@@ -2,7 +2,6 @@ package com.hackme.hackride.activity
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -23,11 +22,10 @@ import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.ktx.getValue
 import com.hackme.hackride.R
 import com.hackme.hackride.database.DataKasus
 import com.hackme.hackride.fungsi.MarkerMotor
@@ -42,6 +40,7 @@ import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.compass.CompassOverlay
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
+import java.sql.BatchUpdateException
 import java.util.Timer
 import java.util.TimerTask
 
@@ -102,6 +101,13 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
     private lateinit var btnAbaikan : Button
     private lateinit var btnStopAbaikan : CardView
 
+    private var valueEventListener: ValueEventListener? = null
+
+    private lateinit var infoLacak : CardView
+    private lateinit var btnLacakInfolacak :Button
+    private lateinit var btnStopInfolacak : Button
+
+
 
 
 
@@ -151,6 +157,11 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
 
         notiFikasiJauh.visibility = View.GONE
 
+        //inisialisasi infolacak
+        infoLacak = findViewById(R.id.cv_sedangdilacak)
+        btnLacakInfolacak = findViewById(R.id.btn_Track)
+        btnStopInfolacak = findViewById(R.id.btn_stop_lacak)
+
 
         // ambi data dari login user
         datadarilogin()
@@ -159,7 +170,6 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         btnLogout.setOnClickListener {
             hapusDataPemilik()
             btnLogout()
-            logoutUser()
             locationManager.removeUpdates(this)
             motorMarker?.onDestroy()
             marker?.onDestroy()
@@ -174,7 +184,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
             stopService(serviceIntent)
             Intent(this, PemilikActivity::class.java).flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(Intent(this, LoginActivity::class.java))
-
+            logoutUser()
         }
         //inisialisasi mulai
         setinganMulai()
@@ -242,10 +252,22 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
             Log.d("abaikan", "btnAbaikan $Abaikan")
         }
         btnLapor.setOnClickListener {
+            val kasusdata = DataKasus(Id_user,status,ID_Motor,Id_user)
+            saveDataKasus(kasusdata)
             laporkan()
         }
         btnStopAbaikan.setOnClickListener {
             StopAbaikan()
+        }
+        btnStopInfolacak.setOnClickListener {
+            stopLacak()
+        }
+        btnLacakInfolacak.setOnClickListener {
+            val kasusdata = DataKasus(Id_user,status,ID_Motor,Id_user)
+            saveDataKasus(kasusdata)
+            val intent = Intent(this,LacakActivity::class.java)
+            startActivity(intent)
+            finishAffinity()
         }
 
     }
@@ -322,7 +344,6 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         // Resume the map view when the activity is resumed
         mapView.onResume()
         motorMarker?.onResume()
-        startClock()
     }
 
     override fun onPause() {
@@ -354,6 +375,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
 
     private fun logoutUser() {
         mapView.overlays.clear()
+        hentikanDatabase()
         auth.signOut()
         val intent = Intent(this, LoginActivity::class.java)
         startActivity(intent)
@@ -372,49 +394,54 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
 
     private fun getDataMotor(id_motor: String) {
         val motorRef = database.child("motor").child(id_motor)
-        motorRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                if (dataSnapshot.exists()) {
+        motorRef.get().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val dataSnapshot = task.result
+                if (dataSnapshot != null && dataSnapshot.exists()) {
                     val latitude = dataSnapshot.child("latitude").getValue(Double::class.java)
                     val longitude = dataSnapshot.child("longitude").getValue(Double::class.java)
                     val mesin = dataSnapshot.child("mesin").getValue(Int::class.java)
                     val getaran = dataSnapshot.child("getaran").getValue(Boolean::class.java)
-                    val latitudeParkir = dataSnapshot.child("latitudeparkir").getValue(Double::class.java)
-                    val longitudeParkir = dataSnapshot.child("longitudeparkir").getValue(Double::class.java)
+                    val latitudedipakai = dataSnapshot.child("latitudedipakai").getValue(Double::class.java)
+                    val longitudedipakai = dataSnapshot.child("longitudedipakai").getValue(Double::class.java)
+                    val laporan = dataSnapshot.child("laporan").getValue(Boolean::class.java)
+                    if (laporan == false){
+                        infoLacak.visibility = View.GONE
+                    }else{infoLacak.visibility = View.VISIBLE}
 
-                    if (latitude != null && longitude != null && latitudeParkir != null && longitudeParkir != null && mesin != null && getaran != null) {
+                    if (latitude != null && longitude != null && latitudedipakai != null && longitudedipakai != null && mesin != null && getaran != null) {
                         Gtaran = getaran
-                        if (mesin != 0){
+                        if (mesin != 0) {
                             Mesin = "Acktive"
-                        }else{
+                        } else {
                             Mesin = "Nonactive"
                         }
                         motorLatitude = latitude
                         motorLongitude = longitude
-                        latParkir = latitudeParkir
-                        longParkit = longitudeParkir
-                        markerUser(userLatitude,userLongitude)
-                        addMotorMarker(motorLatitude,motorLongitude)
-                        drawPolyline(motorLatitude,motorLongitude,userLatitude,userLongitude)
+                        latParkir = latitudedipakai
+                        longParkit = longitudedipakai
+                        markerUser(userLatitude, userLongitude)
+                        addMotorMarker(motorLatitude, motorLongitude)
+                        drawPolyline(motorLatitude, motorLongitude, userLatitude, userLongitude)
                         jarakUserMotorHidup(mesin)
-//                        val initialLocation = GeoPoint(motorLatitude, motorLongitude)
-//                        mapView.controller.setCenter(initialLocation)
-
+                        // val initialLocation = GeoPoint(motorLatitude, motorLongitude)
+                        // mapView.controller.setCenter(initialLocation)
                     }
+
                     // Lakukan sesuatu dengan data yang telah diambil
                     // Contoh: tampilkan data di logcat
-                    Log.d("Data Motor", "Latitude: $latitude, Longitude: $longitude, Mesin: $mesin, Getaran: $getaran, Latitude Parkir: $latitudeParkir, Longitude Parkir: $longitudeParkir")
+                    Log.d("Data Motor pemilk aktifiti", "Latitude: $latitude, Longitude: $longitude, Mesin: $mesin, Getaran: $getaran, Latitude Parkir: $latitudedipakai, Longitude Parkir: $longitudedipakai")
                 } else {
                     // Data motor dengan id_motor tersebut tidak ditemukan
                 }
-            }
-
-            override fun onCancelled(databaseError: DatabaseError) {
+            } else {
                 // Terjadi kesalahan saat mengambil data dari Firebase
-                Log.e("Data Motor", "Error: ${databaseError.message}")
+                val exception = task.exception
+                Log.e("Data Motor", "Error: ${exception?.message}")
             }
-        })
+        }
     }
+
 
     private fun motor(){
         // Ambil id_motor dari penyimpanan perangkat
@@ -524,7 +551,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
                 rotationGestureOverlay.isEnabled = true
             }
         } else {
-            Handler().postDelayed({ getDataMotor(ID_Motor) }, 1000)
+//            Handler().postDelayed({ getDataMotor(ID_Motor) }, 1000)
             Handler().postDelayed({ setupMapView() }, 1000)
         }
     }
@@ -570,12 +597,12 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
             override fun run() {
                 // Kode untuk pembaruan data setiap detik
                 runOnUiThread {
+                    markerUser(userLatitude,userLongitude)
+                    addMotorMarker(motorLatitude,motorLongitude)
                     // Panggil fungsi updateData() atau kode pembaruan data lainnya di sini
                     val jarak = calculateEuclideanDistance(userLatitude, userLongitude, motorLatitude, motorLongitude)
                     val bulatjarak = Math.round(jarak)
                     jarakuser = bulatjarak.toString()
-                    markerUser(userLatitude,userLongitude)
-                    addMotorMarker(motorLatitude,motorLongitude)
                     //panggil fungsi
                     getDataMotor(ID_Motor)
                     perikasKemalingan()
@@ -801,6 +828,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
 
     override fun onBackPressed() {
         super.onBackPressed()
+        cancelClock()
         finishAffinity() // Menutup semua aktivitas yang terkait dengan aktivitas saat ini
     }
 
@@ -880,6 +908,17 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         }else{
             notiFikasiJauh.visibility = View.GONE
         }
+    }
+
+    private fun hentikanDatabase(){
+        valueEventListener?.let { database.removeEventListener(it) }
+    }
+    private fun stopLacak(){
+        // Kirim data ke Realtime Database Firebase
+        val pesanuser = database.child("motor").child(ID_Motor)
+        pesanuser.child("latitudedipakai").setValue(motorLatitude)
+        pesanuser.child("longitudedipakai").setValue(motorLongitude)
+        pesanuser.child("laporan").setValue(false)
     }
 }
 

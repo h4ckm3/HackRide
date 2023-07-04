@@ -5,26 +5,25 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Color
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
+import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.TextView
 import androidx.cardview.widget.CardView
-import androidx.core.view.isNotEmpty
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.getValue
 import com.hackme.hackride.R
 import com.hackme.hackride.database.UserLacak
-import com.hackme.hackride.fungsi.AparatService
 import com.hackme.hackride.fungsi.MarkerMotor
 import com.hackme.hackride.fungsi.MarkerUser
-import com.hackme.hackride.fungsi.MyForegroundService
 import com.hackme.hackride.fungsi.calculateEuclideanDistance
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -34,8 +33,6 @@ import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.compass.CompassOverlay
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
-import java.sql.Time
-import java.util.Random
 import java.util.Timer
 import java.util.TimerTask
 
@@ -83,9 +80,11 @@ class LacakActivity : AppCompatActivity() {
     //timer data semua
     private var timerData : Timer? = null
 
-    //marker motor
+    //tombol bantuan
+    private lateinit var btnEndLacak : CardView
+    private lateinit var btnTeleponPemilik : CardView
 
-    @SuppressLint("MissingInflatedId")
+    @SuppressLint("MissingInflatedId", "SuspiciousIndentation")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_lacak)
@@ -103,8 +102,36 @@ class LacakActivity : AppCompatActivity() {
 
         //inisialisasi lengenda
         tvIdMotor = findViewById(R.id.tv_MarkerMotor)
-        mulaiMenuLacak()
 
+        //inisialisasi pesan
+        PesanTeks = findViewById(R.id.et_pesaanuser)
+        btnKirimPesan = findViewById(R.id.cv_btnkirimpesan)
+
+        //inisialisasi btnBantuan
+        btnEndLacak = findViewById(R.id.cv_btnStoplacak)
+        btnTeleponPemilik = findViewById(R.id.cv_btnTelephone)
+
+        mulaiMenuLacak()
+        btnKirimPesan.setOnClickListener {
+         val IsiPesan = PesanTeks.text.toString()
+            if (IsiPesan != ""){
+                kirimPesan(IsiPesan)
+            }
+
+            val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            inputMethodManager.hideSoftInputFromWindow(PesanTeks.windowToken, 0)
+            PesanTeks.text.clear()
+
+        }
+        btnTeleponPemilik.setOnClickListener {
+            val formattedPhoneNumber = formatPhoneNumber(noHp)
+            Log.d("no hp", "$formattedPhoneNumber")
+            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$formattedPhoneNumber"))
+            startActivity(intent)
+        }
+        btnEndLacak.setOnClickListener {
+            stopLacak()
+        }
     }
 
 
@@ -117,6 +144,14 @@ class LacakActivity : AppCompatActivity() {
         motorMarker = Marker(maps)
         markerAparat = Marker(maps)
         marker = Marker(maps)
+        kirimPesan("")
+        if (StatusUser == "Aparat"){
+            btnTeleponPemilik.visibility =View.VISIBLE
+            btnEndLacak.visibility = View.GONE
+        }else{
+            btnTeleponPemilik.visibility =View.GONE
+            btnEndLacak.visibility = View.VISIBLE
+        }
 
     }
 
@@ -131,18 +166,21 @@ class LacakActivity : AppCompatActivity() {
         maps.onPause()
         cancelClockData()
         Marker(maps).onPause()
+        kirimPesan("")
     }
     override fun onDestroy() {
         super.onDestroy()
         maps.onPause()
         Marker(maps).onDestroy()
         cancelClockData()
+        kirimPesan("")
     }
 
     override fun onStop() {
         super.onStop()
         maps.onPause()
         cancelClockData()
+        kirimPesan("")
     }
 
     override fun onBackPressed() {
@@ -177,50 +215,58 @@ class LacakActivity : AppCompatActivity() {
         }
     }
     //data motor
-    private fun AmbildataMotor(){
+    private fun AmbildataMotor() {
         val motorRef = databaseReference.child("motor").child(Id_Motor)
-        motorRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                if (dataSnapshot.exists()) {
-                    val latitude = dataSnapshot.child("latitude").getValue(Double::class.java)
-                    val longitude = dataSnapshot.child("longitude").getValue(Double::class.java)
-                    val mesin = dataSnapshot.child("mesin").getValue(Int::class.java)
-                    val getaran = dataSnapshot.child("getaran").getValue(Boolean::class.java)
-                    val latitudeParkir = dataSnapshot.child("latitudeparkir").getValue(Double::class.java)
-                    val longitudeParkir = dataSnapshot.child("longitudeparkir").getValue(Double::class.java)
-                    val laporan = dataSnapshot.child("laporan").getValue(Boolean::class.java)
+        motorRef.get().addOnSuccessListener { dataSnapshot ->
+            if (dataSnapshot.exists()) {
+                val latitude = dataSnapshot.child("latitude").getValue(Double::class.java)
+                val longitude = dataSnapshot.child("longitude").getValue(Double::class.java)
+                val mesin = dataSnapshot.child("mesin").getValue(Int::class.java)
+                val getaran = dataSnapshot.child("getaran").getValue(Boolean::class.java)
+                val latitudedipakai = dataSnapshot.child("latitudedipakai").getValue(Double::class.java)
+                val longitudedipakai = dataSnapshot.child("longitudedipakai").getValue(Double::class.java)
+                val laporan = dataSnapshot.child("laporan").getValue(Boolean::class.java)
 
-                    if (latitude != null && longitude != null && latitudeParkir != null && longitudeParkir != null && mesin != null && getaran != null) {
-                        GetaranMotor = getaran
-                        if (mesin != 0){
-                            MesinMotor = "Acktive"
-                        }else{
-                            MesinMotor = "Nonactive"
-                        }
-                        latMotor = latitude
-                        longMotor = longitude
-                        latParkir = latitudeParkir
-                        longParkir = longitudeParkir
-                        Log.d("data motor","$latMotor")
-                        addMotorMarker(latitude,longitude)
-                        if (laporan == false){
-
-                        }
+                if (latitude != null && longitude != null && latitudedipakai != null && longitudedipakai != null && mesin != null && getaran != null) {
+                    val jarakAman = calculateEuclideanDistance(latitude,longitude,latitudedipakai,longitudedipakai)
+                    GetaranMotor = getaran
+                    if (mesin != 0) {
+                        MesinMotor = "Acktive"
+                    } else {
+                        MesinMotor = "Nonactive"
                     }
-                    // Lakukan sesuatu dengan data yang telah diambil
-                    // Contoh: tampilkan data di logcat
-                    Log.d("Data Motor", "Latitude: $latitude, Longitude: $longitude, Mesin: $mesin, Getaran: $getaran, Latitude Parkir: $latitudeParkir, Longitude Parkir: $longitudeParkir")
-                } else {
-                    // Data motor dengan id_motor tersebut tidak ditemukan
+                    latMotor = latitude
+                    longMotor = longitude
+                    latParkir = latitudedipakai
+                    longParkir = longitudedipakai
+                    Log.d("data motor", "$latMotor")
+                    if (laporan == false && jarakAman <10) {
+                        if (StatusUser == "Pemilik"){
+                            val inten = Intent(this, PemilikActivity::class.java)
+                            startActivity(inten)
+                        }
+                        if (StatusUser == "Aparat"){
+                            val inten = Intent(this, AparatActivity::class.java)
+                            startActivity(inten)
+                        }
+                        maps.onPause()
+                        cancelClockData()
+                        Marker(maps).onDestroy()
+                        finishAffinity()
+                    }
                 }
+                // Lakukan sesuatu dengan data yang telah diambil
+                // Contoh: tampilkan data di logcat
+                Log.d("Data Motor", "Latitude: $latitude, Longitude: $longitude, Mesin: $mesin, Getaran: $getaran, Latitude Parkir: $latitudedipakai, Longitude Parkir: $longitudedipakai")
+            } else {
+                // Data motor dengan id_motor tersebut tidak ditemukan
             }
-
-            override fun onCancelled(databaseError: DatabaseError) {
-                // Terjadi kesalahan saat mengambil data dari Firebase
-                Log.e("Data Motor", "Error: ${databaseError.message}")
-            }
-        })
+        }.addOnFailureListener { databaseError ->
+            // Terjadi kesalahan saat mengambil data dari Firebase
+            Log.e("Data Motor", "Error: ${databaseError.message}")
+        }
     }
+
 
     //maps mulai
     private fun setupMapView() {
@@ -284,13 +330,14 @@ class LacakActivity : AppCompatActivity() {
     }
 
     // fungsi data user
-    fun countChildren(childPath: String){
-        databaseReference.child(childPath).addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                val count = dataSnapshot.childrenCount.toInt()
+    fun countChildren(childPath: String) {
+        databaseReference.child(childPath).get().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val dataSnapshot = task.result
+                val count = dataSnapshot?.childrenCount?.toInt() ?: 0
                 val childNames = mutableListOf<UserLacak>()
 
-                dataSnapshot.children.forEach { childSnapshot ->
+                dataSnapshot?.children?.forEach { childSnapshot ->
                     val type = childSnapshot.child("type").getValue(String::class.java)
                     val latitude = childSnapshot.child("latitude").getValue(Double::class.java)
                     val longitude = childSnapshot.child("longitude").getValue(Double::class.java)
@@ -299,31 +346,39 @@ class LacakActivity : AppCompatActivity() {
                     val pesan = childSnapshot.child("pesan").getValue(String::class.java)
                     val ikut = childSnapshot.child("ikut").getValue(Boolean::class.java)
                     val userId = childSnapshot.key
-                    if (userId !=null && pesan!= null && latitude != null && longitude != null && hp != null && type != null && nama != null && ikut != null )
-                    {
-                        if (userId == Id_User){
+                    var pesanMasuk : String = ""
+
+                    if (userId != null && latitude != null && longitude != null && hp != null && type != null && nama != null && ikut != null) {
+                        if (pesan != null ){
+                            pesanMasuk = pesan
+                        }
+
+                        if (userId == Id_User) {
                             latUser = latitude
                             longUser = longitude
+                            Log.d("data user lacak ", "$latUser $longUser")
                         }
-                        if (type == "Aparat"){
-                            val user = UserLacak(userId, hp, nama, latitude, longitude,ikut,pesan,type)
+                        if (type == "Aparat") {
+                            val user = UserLacak(userId, hp, nama, latitude, longitude, ikut, pesanMasuk, type)
                             childNames.add(user)
                         }
-                        if (type =="Pemilik" && userId == Id_Pemilik){
-                            val user = UserLacak(userId, hp, nama, latitude, longitude,ikut,pesan,type)
+                        if (type == "Pemilik" && userId == Id_Pemilik) {
+                            noHp = hp
+                            val user = UserLacak(userId, hp, nama, latitude, longitude, ikut, pesanMasuk, type)
                             childNames.add(user)
                         }
                     }
                 }
                 Log.d("lis ", "$childNames")
                 markerUser(childNames)
+            } else {
+                // Terjadi kesalahan saat mengambil data dari Firebase
+                val exception = task.exception
+                Log.e("Data Child", "Error: ${exception?.message}")
             }
-
-            override fun onCancelled(databaseError: DatabaseError) {
-                // Error handling, if needed
-            }
-        })
+        }
     }
+
 
 
     //fungsi marker
@@ -456,6 +511,7 @@ class LacakActivity : AppCompatActivity() {
                     AmbildataMotor()
                     val childPath = "users"
                     countChildren(childPath)
+                    addMotorMarker(latMotor, longMotor)
                 }
             }
         }, 0, 1000) // Menjalankan tugas setiap 1000 milidetik (1 detik)
@@ -463,6 +519,34 @@ class LacakActivity : AppCompatActivity() {
     private fun cancelClockData() {
         timerData?.cancel()
         timerData = null
+    }
+    //fungsi kirim pesan
+    private fun kirimPesan(isiPesan:String){
+        // Kirim data ke Realtime Database Firebase
+        val pesanuser = databaseReference.child("users").child(Id_User)
+        pesanuser.child("pesan").setValue(isiPesan)
+    }
+
+    //telphone fungsi
+    fun formatPhoneNumber(phoneNumber: String): String {
+        var formattedNumber = phoneNumber
+        // Cek jika nomor telepon dimulai dengan "08" atau "+62"
+        if (phoneNumber.startsWith("08")) {
+            // Ganti awalan "08" dengan kode negara "+62"
+            formattedNumber = "+62$phoneNumber"
+        } else if (phoneNumber.startsWith("+62")) {
+            // Hapus tanda "+" pada awalan "+62"
+            formattedNumber = phoneNumber
+        }
+        return formattedNumber
+    }
+    //fungsi stop lacak
+    private fun stopLacak(){
+        // Kirim data ke Realtime Database Firebase
+        val pesanuser = databaseReference.child("motor").child(Id_Motor)
+        pesanuser.child("latitudedipakai").setValue(latMotor)
+        pesanuser.child("longitudedipakai").setValue(longMotor)
+        pesanuser.child("laporan").setValue(false)
     }
 
 }

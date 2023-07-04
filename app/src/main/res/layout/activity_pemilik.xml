@@ -474,6 +474,39 @@
                 android:text="Stop Ignoring"/>
         </androidx.cardview.widget.CardView>
 
+        <!--tombol sedang dilacak-->
+        <!--tombol abaikan-->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cv_sedangdilacak"
+            app:cardCornerRadius="30dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginEnd="100dp"
+            android:layout_marginBottom="570dp">
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center">
+                <Button
+                    android:id="@+id/btn_Track"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Track"
+                    android:layout_margin = "5dp"/>
+                <Button
+                    android:id="@+id/btn_stop_lacak"
+                    android:backgroundTint="#E91E63"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Stop "
+                    android:layout_margin="5dp"/>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
     </RelativeLayout>
 
 

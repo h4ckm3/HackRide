@@ -1,15 +1,17 @@
 package com.hackme.hackride
 
-import android.content.Context
+import android.Manifest
 import android.content.Intent
-import android.content.SharedPreferences
-import androidx.appcompat.app.AppCompatActivity
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
-import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -19,8 +21,6 @@ import com.google.firebase.database.ValueEventListener
 import com.hackme.hackride.activity.AparatActivity
 import com.hackme.hackride.activity.LoginActivity
 import com.hackme.hackride.activity.PemilikActivity
-import com.hackme.hackride.database.AparatData
-import com.hackme.hackride.database.User
 
 @Suppress("DEPRECATION")
 class MainActivity : AppCompatActivity() {
@@ -40,12 +40,8 @@ class MainActivity : AppCompatActivity() {
         dataBase = FirebaseDatabase.getInstance().reference
 
         btnMulai.setOnClickListener {
-            progressStatus = 0
-            progressBar?.visibility = View.VISIBLE
-            btnMulai.isEnabled = false
+            lokasiuser()
 
-            handler = Handler()
-            handler?.postDelayed(runnable, 10)
         }
     }
 
@@ -76,20 +72,18 @@ class MainActivity : AppCompatActivity() {
             btnMulai.visibility = View.GONE
             progressBar?.visibility = View.VISIBLE
             // Pengguna telah login
-            val userId =currentUser.uid
+            val userId = currentUser.uid
 
             getUserTypeFromLocal(userId) { userType ->
                 if (userType != null) {
                     if (userType == "Pemilik"){
-                        val inten  = Intent(this, PemilikActivity ::class.java )
+                        val inten  = Intent(this, PemilikActivity::class.java)
                         startActivity(inten)
                         finishAffinity()
-                        Log.d("User Type", userType)
                     }else{
-                        val inten  = Intent(this, AparatActivity ::class.java )
+                        val inten  = Intent(this, AparatActivity::class.java)
                         startActivity(inten)
                         finishAffinity()
-                        Log.d("User Type", userType)
                     }
                 } else {
                     // Penanganan kesalahan ketika gagal mendapatkan nilai userType
@@ -98,6 +92,7 @@ class MainActivity : AppCompatActivity() {
 
         }
     }
+
     private fun getUserTypeFromLocal(userId: String, callback: (String?) -> Unit) {
         val userRef = dataBase.child("users").child(userId)
         userRef.addListenerForSingleValueEvent(object : ValueEventListener {
@@ -113,5 +108,49 @@ class MainActivity : AppCompatActivity() {
                 callback(null)
             }
         })
+    }
+
+    // Override method onRequestPermissionsResult untuk menangani hasil permintaan izin
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 1 && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+            // All location permissions are granted
+
+        }
+    }
+    private fun lokasiuser(){
+        // Request location permissions
+        val fineLocationPermission = Manifest.permission.ACCESS_FINE_LOCATION
+        val coarseLocationPermission = Manifest.permission.ACCESS_COARSE_LOCATION
+        val backgroundLocationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            Manifest.permission.ACCESS_BACKGROUND_LOCATION
+        } else {
+            fineLocationPermission
+        }
+        val permissions = arrayOf(
+            fineLocationPermission,
+            coarseLocationPermission,
+            backgroundLocationPermission
+        )
+        val grantedPermissions = permissions.filter {
+            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+        }
+
+        if (grantedPermissions.size == permissions.size) {
+            // All location permissions are granted
+            progressStatus = 0
+            progressBar?.visibility = View.VISIBLE
+            btnMulai.isEnabled = false
+
+            handler = Handler()
+            handler?.postDelayed(runnable, 10)
+        } else {
+            // Request location permissions from the user
+            ActivityCompat.requestPermissions(this, permissions, 1)
+        }
     }
 }

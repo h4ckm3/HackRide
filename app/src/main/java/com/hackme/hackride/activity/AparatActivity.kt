@@ -31,6 +31,8 @@ import com.google.firebase.database.ValueEventListener
 import com.hackme.hackride.R
 import com.hackme.hackride.R.layout.activity_aparat
 import com.hackme.hackride.database.DataKasus
+import com.hackme.hackride.database.Motor
+import com.hackme.hackride.database.MotorLaporan
 import com.hackme.hackride.fungsi.AparatService
 import com.hackme.hackride.fungsi.MarkerUser
 import com.hackme.hackride.fungsi.calculateEuclideanDistance
@@ -45,8 +47,6 @@ import java.util.Timer
 import java.util.TimerTask
 
 class AparatActivity : AppCompatActivity(), LocationListener {
-    //ujicoba
-    private lateinit var btnLacak: Button
     //data motor
     private var jumlahMotor : Int =0
     //lokasi aparat
@@ -86,6 +86,8 @@ class AparatActivity : AppCompatActivity(), LocationListener {
     private lateinit var auth: FirebaseAuth
     private lateinit var database : FirebaseDatabase
     private lateinit var databaseRef : DatabaseReference
+    private val motorList: MutableList<Motor> = mutableListOf()
+    private val motorListLaporan: MutableList<MotorLaporan> = mutableListOf()
 
     //masp
     lateinit var maps : MapView
@@ -364,9 +366,6 @@ class AparatActivity : AppCompatActivity(), LocationListener {
             Handler().postDelayed({ setupMapView() }, 1000)
         }
     }
-    private fun enableRotation() {
-        maps.setMapOrientation(0f) // Mengatur sudut rotasi ke 0 derajat untuk memulai
-    }
 
     private fun enableCompass() {
         val compassOverlay = CompassOverlay(this, maps)
@@ -527,53 +526,97 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         })
     }
 
-    private fun getDataMotor(id_motor: String) {
-        val motorRef = databaseRef.child("motor").child(id_motor)
-        motorRef.get().addOnCompleteListener { task ->
+    @SuppressLint("SetTextI18n")
+    private fun getDataMotor() {
+        databaseRef.child("motor").get().addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 val dataSnapshot = task.result
-                if (dataSnapshot != null && dataSnapshot.exists()) {
-                    val latitude = dataSnapshot.child("latitude").getValue(Double::class.java)
-                    val longitude = dataSnapshot.child("longitude").getValue(Double::class.java)
-                    val mesin = dataSnapshot.child("mesin").getValue(Int::class.java)
-                    val getaran = dataSnapshot.child("getaran").getValue(Boolean::class.java)
-                    val latitudedipakai = dataSnapshot.child("latitudedipakai").getValue(Double::class.java)
-                    val longitudedipakai = dataSnapshot.child("longitudipakai").getValue(Double::class.java)
-                    val idPemilik = dataSnapshot.child("id_pemilik").getValue(String::class.java)
-                    val laporan = dataSnapshot.child("laporan").getValue(Boolean::class.java)
+                val count = dataSnapshot?.childrenCount?.toInt() ?: 0
+                val childNames = mutableListOf<Motor>()
+                dataSnapshot?.children?.forEach { childSnapshot ->
+                    val latitude = childSnapshot.child("latitude").getValue(Double::class.java)
+                    val longitude = childSnapshot.child("longitude").getValue(Double::class.java)
+                    val mesin = childSnapshot.child("mesin").getValue(Int::class.java)
+                    val getaran = childSnapshot.child("getaran").getValue(Boolean::class.java)
+                    val latitudedipakai = childSnapshot.child("latitudedipakai").getValue(Double::class.java)
+                    val longitudedipakai = childSnapshot.child("longitudedipakai").getValue(Double::class.java)
+                    val idPemilik = childSnapshot.child("id_pemilik").getValue(String::class.java)
+                    val laporan = childSnapshot.child("laporan").getValue(Boolean::class.java)
+                    val id_motor = childSnapshot.key
+                    var idMotorTerdekat:String = ""
+                    if (motorList.isEmpty()&&motorListLaporan.isEmpty()){
+                        notifKasus.visibility = hilang
+                        hapusDataKasus()
+                    }
+                    Log.d("lis motor","$motorList")
+                    Log.d("lis motor","$motorListLaporan")
 
-                    if (latitude != null && longitude != null && latitudedipakai != null && longitudedipakai != null && mesin != null && getaran != null&& idPemilik != null) {
+                    if (id_motor!= null&&latitude != null && longitude != null && latitudedipakai != null && longitudedipakai != null && mesin != null && getaran != null&& idPemilik != null) {
                         val jarakAman = calculateEuclideanDistance(latitude, longitude, latitudedipakai, longitudedipakai)
                         val jarakAparat = calculateEuclideanDistance(latAparat, longAparat, latitude, longitude)
                         val bulatJarakaparat = Math.round(jarakAparat)
                         if (mesin == 0 && jarakAman > 50 && jarakAparat < 10000) {
-                            notifKasus.visibility = nampak
-                            teksNotifKasus.text = "The motor with id $id_motor has been stolen\ndistance from you $bulatJarakaparat m"
-                            val kasusData = DataKasus(idAparat, statusAparat, id_motor, idPemilik)
-                            saveDataKasus(kasusData)
+                            val motor = Motor(
+                                id_motor =id_motor,
+                                latitude = latitude,
+                                longitude = longitude,
+                                mesin = mesin,
+                                getaran = getaran,
+                                latitudeDipakai = latitudedipakai,
+                                longitudeDipakai = longitudedipakai
+                            )
+                            if (!motorList.any { it.id_motor == id_motor }) {
+                                motorList.add(motor)
+                            }
+                            idMotorTerdekat = getNearestMotorId(latitude,longitude).toString()
+                            if (id_motor == idMotorTerdekat){
+                                notifKasus.visibility = nampak
+                                teksNotifKasus.text = "The motor with id $id_motor has been stolen\ndistance from you $bulatJarakaparat m"
+                                val kasusData = DataKasus(idAparat, statusAparat, id_motor, idPemilik)
+                                saveDataKasus(kasusData)
+                            }
                         } else {
-                            notifKasus.visibility = hilang
-                            hapusDataKasus()
+                            // Hapus data motor dari motorList
+                            val motorToRemove = motorList.firstOrNull { it.id_motor == id_motor }
+                            if (motorToRemove != null) {
+                                motorList.remove(motorToRemove)
+                            }
                         }
                     }
-                    if (laporan == true && latitude != null && longitude != null && idPemilik != null) {
+                    if (id_motor!= null &&laporan == true && latitude != null && longitude != null && idPemilik != null&& latitudedipakai != null && longitudedipakai != null && mesin != null && getaran != null) {
                         val jarakAparat = calculateEuclideanDistance(latAparat, longAparat, latitude, longitude)
                         val bulat = Math.round(jarakAparat)
                         if (jarakAparat < 10000) {
-                            notifKasus.visibility = nampak
-                            teksNotifKasus.text = "The motor with id $id_motor has been stolen\ndistance from you $bulat m"
-                            val kasusData = DataKasus(idAparat, statusAparat, id_motor, idPemilik)
-                            saveDataKasus(kasusData)
-                        } else {
-                            notifKasus.visibility = hilang
-                            hapusDataKasus()
+                            val motor = MotorLaporan(
+                                id_motor =id_motor,
+                                latitude = latitude,
+                                longitude = longitude,
+                                mesin = mesin,
+                                getaran = getaran,
+                                latitudeDipakai = latitudedipakai,
+                                longitudeDipakai = longitudedipakai
+                            )
+                            if (!motorListLaporan.any { it.id_motor == id_motor }) {
+                                motorListLaporan.add(motor)
+                            }
+                            idMotorTerdekat = getNearestMotorIdLaporan(latitude,longitude).toString()
+                            if (id_motor == idMotorTerdekat){
+                                notifKasus.visibility = nampak
+                                teksNotifKasus.text = "The motor with id $id_motor has been stolen\ndistance from you $bulat m"
+                                val kasusData = DataKasus(idAparat, statusAparat, id_motor, idPemilik)
+                                saveDataKasus(kasusData)
+                            }
+                        }
+                    }else {
+                        // Hapus data motor dari motorList
+                        val motorToRemove = motorListLaporan.firstOrNull { it.id_motor == id_motor }
+                        if (motorToRemove != null) {
+                            motorListLaporan.remove(motorToRemove)
                         }
                     }
                     // Lakukan sesuatu dengan data yang telah diambil
                     // Contoh: tampilkan data di logcat
                     Log.d("Data Motor Aparat aktifiti", "Latitude: $latitude, Longitude: $longitude, Mesin: $mesin, Getaran: $getaran, Latitude Parkir: $latitudedipakai, Longitude Parkir: $longitudedipakai")
-                } else {
-                    // Data motor dengan id_motor tersebut tidak ditemukan
                 }
             } else {
                 // Terjadi kesalahan saat mengambil data dari Firebase
@@ -595,12 +638,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
                     markerUser(latAparat,longAparat)
                 }
                 // Panggil fungsi updateData() atau kode pembaruan data lainnya di sini
-                val childPath = "motor"
-                countChildren(childPath) { childNames ->
-                    childNames.forEach { childName ->
-                        getDataMotor(childName)
-                    }
-                }
+                getDataMotor()
             }
         }, 0, 1000) // Menjalankan tugas setiap 1000 milidetik (1 detik)
     }
@@ -630,5 +668,35 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         editor.remove("id_motor")
         editor.remove("id_pemilik")
         editor.apply()
+    }
+
+    // pembaning lokasi apara
+    fun getNearestMotorId(lat:Double,long:Double): String? {
+        var nearestMotorId: String? = null
+        var closestDistance: Double = Double.MAX_VALUE
+
+        for (motor in motorList) {
+            val distance = calculateEuclideanDistance(latAparat,longAparat,lat,long)
+            if (distance < closestDistance) {
+                nearestMotorId = motor.id_motor
+                closestDistance = distance
+            }
+        }
+
+        return nearestMotorId
+    }
+    fun getNearestMotorIdLaporan(lat:Double,long:Double): String? {
+        var nearestMotorId: String? = null
+        var closestDistance: Double = Double.MAX_VALUE
+
+        for (motor in motorListLaporan) {
+            val distance = calculateEuclideanDistance(latAparat,longAparat,lat,long)
+            if (distance < closestDistance) {
+                nearestMotorId = motor.id_motor
+                closestDistance = distance
+            }
+        }
+
+        return nearestMotorId
     }
 }

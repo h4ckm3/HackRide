@@ -1,6 +1,7 @@
 package com.hackme.hackride.fungsi
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -90,18 +91,16 @@ class MyForegroundService : Service() {
         // Daftarkan receiver untuk ACTION_STOP_LOCATION_COMPARISON
         val intentFilter = IntentFilter(ACTION_STOP_LOCATION_COMPARISON)
         registerReceiver(stopLocationComparisonReceiver, intentFilter)
+        getAbaikan()
     }
 
+    @SuppressLint("SuspiciousIndentation")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null && intent.hasExtra("id_motor")) {
             idMotor = intent.getStringExtra("id_motor") ?: ""
             status = intent.getStringExtra("status") ?: ""
             id_user = intent.getStringExtra("id_user") ?: ""
-            if (status == "Pemilik"){
                 startForegroundService("HackRide is Running","Welcome Owner")
-            }else{
-                startForegroundService("HackRide is Running","Welcome Officer")
-            }
 
             startLocationComparison()
             startAmbildata()
@@ -505,8 +504,9 @@ class MyForegroundService : Service() {
         }
     }
 
-    private fun stopSemuaTimer(){
-
+    private fun getAbaikan(){
+        val sharedPreferences = getSharedPreferences("Abaikan", Context.MODE_PRIVATE)
+        Abaikan = sharedPreferences.getBoolean("abaikan", false)
     }
 
 }

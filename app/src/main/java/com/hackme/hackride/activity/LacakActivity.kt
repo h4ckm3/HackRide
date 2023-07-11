@@ -83,6 +83,7 @@ class LacakActivity : AppCompatActivity() {
     //tombol bantuan
     private lateinit var btnEndLacak : CardView
     private lateinit var btnTeleponPemilik : CardView
+    private lateinit var btnFokususer :CardView
 
     @SuppressLint("MissingInflatedId", "SuspiciousIndentation")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -110,6 +111,7 @@ class LacakActivity : AppCompatActivity() {
         //inisialisasi btnBantuan
         btnEndLacak = findViewById(R.id.cv_btnStoplacak)
         btnTeleponPemilik = findViewById(R.id.cv_btnTelephone)
+        btnFokususer = findViewById(R.id.cv_btnFokusUser)
 
         mulaiMenuLacak()
         btnKirimPesan.setOnClickListener {
@@ -131,6 +133,9 @@ class LacakActivity : AppCompatActivity() {
         }
         btnEndLacak.setOnClickListener {
             stopLacak()
+        }
+        btnFokususer.setOnClickListener {
+            fokususer()
         }
     }
 
@@ -547,6 +552,19 @@ class LacakActivity : AppCompatActivity() {
         pesanuser.child("latitudedipakai").setValue(latMotor)
         pesanuser.child("longitudedipakai").setValue(longMotor)
         pesanuser.child("laporan").setValue(false)
+    }
+    //fokus user
+    private fun fokususer(){
+        val initialLocation = GeoPoint(latUser, longUser)
+        maps.controller.setCenter(initialLocation)
+        maps.controller.setZoom(17.0)
+        val rotationGestureOverlay = RotationGestureOverlay(maps)
+        rotationGestureOverlay.isEnabled = false
+        if (!maps.boundingBox.contains(latUser, longUser)) {
+            Handler().postDelayed({ fokususer() }, 1000)
+        }else{
+            rotationGestureOverlay.isEnabled = true
+        }
     }
 
 }

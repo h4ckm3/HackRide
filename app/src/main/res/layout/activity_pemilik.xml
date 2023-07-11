@@ -218,17 +218,20 @@
             android:layout_width="50dp"
             android:layout_height="20dp"
             android:layout_above="@+id/cv_konten"
+            app:layout_constraintTop_toBottomOf="@+id/cv_btnhome"
             android:layout_alignParentEnd="true"
             android:layout_marginEnd="260dp"
             android:layout_marginBottom="5dp"
             app:cardBackgroundColor="@color/colorAccent"
-            app:cardCornerRadius="50dp">
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:text="Home"
-                    android:textColor="@color/black"/>
+            app:cardCornerRadius="50dp"
+            tools:ignore="NotSibling">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="Home"
+                android:textColor="@color/black" />
         </androidx.cardview.widget.CardView>
         <!--ket about-->
         <androidx.cardview.widget.CardView
@@ -275,6 +278,7 @@
             android:layout_alignParentEnd="true"
             android:layout_marginTop="350dp"
             android:layout_marginEnd="25dp"
+            android:visibility="gone"
             app:cardCornerRadius="30dp">
 
             <androidx.cardview.widget.CardView
@@ -332,6 +336,7 @@
             android:layout_alignParentEnd="true"
             android:layout_marginTop="350dp"
             android:layout_marginEnd="25dp"
+            android:visibility="gone"
             app:cardCornerRadius="30dp">
 
             <androidx.cardview.widget.CardView
@@ -375,6 +380,7 @@
                             android:text="Track"
                             android:textColor="@color/white"
                             tools:ignore="TouchTargetSizeCheck" />
+
                         <Button
                             android:id="@+id/btn_aktifkabJauh"
                             android:layout_width="100dp"
@@ -396,6 +402,7 @@
             android:layout_alignParentEnd="true"
             android:layout_marginTop="350dp"
             android:layout_marginEnd="25dp"
+            android:visibility="gone"
             app:cardCornerRadius="30dp">
 
             <androidx.cardview.widget.CardView
@@ -457,52 +464,58 @@
         <!--tombol abaikan-->
         <androidx.cardview.widget.CardView
             android:id="@+id/cv_btnstopAbaikan"
-            app:cardCornerRadius="30dp"
-            app:cardBackgroundColor="#E91E63"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_alignParentBottom="true"
             android:layout_marginEnd="20dp"
-            android:layout_marginBottom="580dp">
+            android:layout_marginBottom="580dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="#E91E63"
+            app:cardCornerRadius="30dp">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:textSize="15dp"
                 android:padding="10dp"
-                android:text="Stop Ignoring"/>
+                android:text="Stop Ignoring"
+                android:textSize="15dp" />
         </androidx.cardview.widget.CardView>
 
         <!--tombol sedang dilacak-->
         <!--tombol abaikan-->
         <androidx.cardview.widget.CardView
             android:id="@+id/cv_sedangdilacak"
-            app:cardCornerRadius="30dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_alignParentBottom="true"
             android:layout_marginEnd="100dp"
-            android:layout_marginBottom="570dp">
+            android:layout_marginBottom="570dp"
+            android:visibility="gone"
+            app:cardCornerRadius="30dp">
+
             <LinearLayout
-                android:orientation="horizontal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="center">
+                android:gravity="center"
+                android:orientation="horizontal">
+
                 <Button
                     android:id="@+id/btn_Track"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Track"
-                    android:layout_margin = "5dp"/>
+                    android:layout_margin="5dp"
+                    android:text="Track" />
+
                 <Button
                     android:id="@+id/btn_stop_lacak"
-                    android:backgroundTint="#E91E63"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Stop "
-                    android:layout_margin="5dp"/>
+                    android:layout_margin="5dp"
+                    android:backgroundTint="#E91E63"
+                    android:text="Stop " />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>

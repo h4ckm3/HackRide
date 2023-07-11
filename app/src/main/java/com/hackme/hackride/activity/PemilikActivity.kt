@@ -25,7 +25,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.getValue
 import com.hackme.hackride.R
 import com.hackme.hackride.database.DataKasus
 import com.hackme.hackride.fungsi.MarkerMotor
@@ -40,10 +39,11 @@ import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.compass.CompassOverlay
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
-import java.sql.BatchUpdateException
 import java.util.Timer
 import java.util.TimerTask
 
+
+@Suppress("DEPRECATION")
 class PemilikActivity : AppCompatActivity(), LocationListener {
 
     //konten linearlayoyt
@@ -78,10 +78,9 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
     private var status:String=""
     private var noHp: String=""
     private var timerMarker: Timer? = null
-    private var timerAbaikan: Timer? = null
     private var Mesin : String =""
     private var Gtaran : Boolean = false
-    private var Abaikan : Boolean = false
+    private var Abaikan : Boolean? = null
 
     //tombol maps
     private lateinit var btnFokusUser : CardView
@@ -120,7 +119,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
             getSharedPreferences("OpenStreetMap", MODE_PRIVATE)
         )
         mapView = findViewById(R.id.mapView)
-        mapView.setTileSource(TileSourceFactory.DEFAULT_TILE_SOURCE)
+        mapView.setTileSource(TileSourceFactory.CLOUDMADESTANDARDTILES)
 
         //tombol pada maps
         btnFokusUser = findViewById(R.id.cv_btnfokuspemilik)
@@ -168,6 +167,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         // memulai maps
 
         btnLogout.setOnClickListener {
+            hapusAbaikan()
             hapusDataPemilik()
             btnLogout()
             locationManager.removeUpdates(this)
@@ -187,6 +187,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
             logoutUser()
         }
         //inisialisasi mulai
+        getAbaikan()
         setinganMulai()
         datadarilogin()
         getDataMotor(ID_Motor)
@@ -199,8 +200,8 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
             startBackgroundService(ID_Motor,status,Id_user)
         }
         if (savedInstanceState != null) {
-            motorLatitude = savedInstanceState.getDouble("motorLatitude");
-            motorLongitude = savedInstanceState.getDouble("motorLongitude");
+            motorLatitude = savedInstanceState.getDouble("motorLatitude")
+            motorLongitude = savedInstanceState.getDouble("motorLongitude")
             userLatitude = savedInstanceState.getDouble("userLatitude")
             userLongitude = savedInstanceState.getDouble("userLongitude")
         }
@@ -327,7 +328,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
     }
 
     override fun onLocationChanged(location: Location) {
-        val userLocation = GeoPoint(location.latitude, location.longitude)
+        GeoPoint(location.latitude, location.longitude)
 
         userLatitude = location.latitude
         userLongitude = location.longitude
@@ -557,10 +558,6 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
     }
 
 
-    private fun enableRotation() {
-        mapView.setMapOrientation(0f) // Mengatur sudut rotasi ke 0 derajat untuk memulai
-    }
-
     private fun enableCompass() {
         val compassOverlay = CompassOverlay(this, mapView)
         compassOverlay.enableCompass()
@@ -591,7 +588,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
 
     //timer pengambilan data
     private fun startClock() {
-        val mapView = findViewById<MapView>(R.id.mapView) // Inisialisasi mapView
+        findViewById<MapView>(R.id.mapView) // Inisialisasi mapView
         timerMarker = Timer()
         timerMarker?.scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
@@ -792,6 +789,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
 
     //setingan ketika mulai
     private fun setinganMulai(){
+        getAbaikan()
         notifKemalingan.visibility = View.GONE
         notiSensorLokasi.visibility = View.GONE
     }
@@ -826,6 +824,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
     }
 
 
+    @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         super.onBackPressed()
         cancelClock()
@@ -876,12 +875,28 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
     private fun startAbaikan() {
         notiFikasiJauh.visibility = View.GONE
         Abaikan = true
+        val sharedPreferences = getSharedPreferences("Abaikan", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putBoolean("abaikan",true).apply()
+
     }
     private fun StopAbaikan() {
         val intent = Intent(this, MyForegroundService::class.java)
         intent.action = MyForegroundService.ACTION_STOP_ABAIKAN
         startService(intent)
         Abaikan = false
+        val sharedPreferences = getSharedPreferences("Abaikan", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putBoolean("abaikan",false).apply()
+    }
+    private fun hapusAbaikan(){
+        val sharedPreferences = getSharedPreferences("Abaikan", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.remove("abaikan").apply()
+    }
+    private fun getAbaikan(){
+        val sharedPreferences = getSharedPreferences("Abaikan", Context.MODE_PRIVATE)
+        Abaikan = sharedPreferences.getBoolean("abaikan", false)
     }
     private fun laporkan(){
         val userLocationRef = database.child("motor").child(ID_Motor)
@@ -920,6 +935,8 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         pesanuser.child("longitudedipakai").setValue(motorLongitude)
         pesanuser.child("laporan").setValue(false)
     }
+
+    //fungsi menampilkan jalan lokasi
 }
 
 

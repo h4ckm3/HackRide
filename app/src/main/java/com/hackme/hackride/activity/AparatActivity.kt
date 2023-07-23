@@ -23,11 +23,8 @@ import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
 import com.hackme.hackride.R
 import com.hackme.hackride.R.layout.activity_aparat
 import com.hackme.hackride.database.DataKasus
@@ -46,6 +43,7 @@ import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
 import java.util.Timer
 import java.util.TimerTask
 
+@Suppress("DEPRECATION")
 class AparatActivity : AppCompatActivity(), LocationListener {
     //data motor
     private var jumlahMotor : Int =0
@@ -92,6 +90,8 @@ class AparatActivity : AppCompatActivity(), LocationListener {
     //masp
     lateinit var maps : MapView
     private var marker: Marker? = null
+    private var compassOverlay: CompassOverlay? = null
+    private var compassEnabled = false
     //lokasi
     private lateinit var locationManager: LocationManager
     // waktu
@@ -292,7 +292,6 @@ class AparatActivity : AppCompatActivity(), LocationListener {
     }
 
     override fun onLocationChanged(location: Location) {
-        val userLocation = GeoPoint(location.latitude, location.longitude)
 
         latAparat = location.latitude
         longAparat = location.longitude
@@ -306,16 +305,19 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         setupMapWithLocation()
         // Resume the map view when the activity is resumed
         maps.onResume()
+        enableCompass()
     }
 
     override fun onPause() {
         maps.onPause()
+        disableCompass()
         super.onPause()
         cancelClockData()
 
     }
     override fun onStop() {
         super.onStop()
+        disableCompass()
         maps.onPause()
         cancelClockData()
     }
@@ -324,6 +326,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
 
     override fun onDestroy() {
         super.onDestroy()
+        disableCompass()
 //        locationManager.removeUpdates(this)
         maps.onPause()
         marker?.onDestroy()
@@ -368,9 +371,21 @@ class AparatActivity : AppCompatActivity(), LocationListener {
     }
 
     private fun enableCompass() {
-        val compassOverlay = CompassOverlay(this, maps)
-        compassOverlay.enableCompass()
-        maps.overlays.add(compassOverlay)
+        if (!compassEnabled) {
+            compassOverlay?.disableCompass() // Pastikan untuk menonaktifkan kompas jika sudah aktif sebelumnya
+            compassOverlay = CompassOverlay(this, maps)
+            compassOverlay?.enableCompass()
+            maps.overlays.add(compassOverlay)
+            compassEnabled = true
+        }
+    }
+
+    private fun disableCompass() {
+        if (compassEnabled) {
+            compassOverlay?.disableCompass()
+            maps.overlays.remove(compassOverlay)
+            compassEnabled = false
+        }
     }
 
     private fun enableZoomControls() {
@@ -404,7 +419,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
         markerUser(latAparat,longAparat)
         val initialLocation = GeoPoint(latAparat, longAparat)
         maps.controller.setCenter(initialLocation)
-        maps.controller.setZoom(20.0)
+        maps.controller.setZoom(17.0)
         val rotationGestureOverlay = RotationGestureOverlay(maps)
         rotationGestureOverlay.isEnabled = false
         if (!maps.boundingBox.contains(latAparat, longAparat)) {
@@ -506,25 +521,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
             idAparat = userId
         }
     }
-    fun countChildren(childPath: String, callback: (List<String>) -> Unit) {
-        databaseRef.child(childPath).addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                val count = dataSnapshot.childrenCount.toInt()
-                val childNames = mutableListOf<String>()
 
-                dataSnapshot.children.forEach { childSnapshot ->
-                    val childName = childSnapshot.key
-                    childName?.let { childNames.add(it) }
-                }
-
-                callback(childNames)
-            }
-
-            override fun onCancelled(databaseError: DatabaseError) {
-                // Error handling, if needed
-            }
-        })
-    }
 
     @SuppressLint("SetTextI18n")
     private fun getDataMotor() {
@@ -543,7 +540,7 @@ class AparatActivity : AppCompatActivity(), LocationListener {
                     val idPemilik = childSnapshot.child("id_pemilik").getValue(String::class.java)
                     val laporan = childSnapshot.child("laporan").getValue(Boolean::class.java)
                     val id_motor = childSnapshot.key
-                    var idMotorTerdekat:String = ""
+                    var idMotorTerdekat:String
                     if (motorList.isEmpty()&&motorListLaporan.isEmpty()){
                         notifKasus.visibility = hilang
                         hapusDataKasus()
@@ -629,7 +626,6 @@ class AparatActivity : AppCompatActivity(), LocationListener {
 
     //fungsi timer
     private fun startClockData() {
-        val mapView = findViewById<MapView>(R.id.mapView) // Inisialisasi mapView
         timerData = Timer()
         timerData?.scheduleAtFixedRate(object : TimerTask() {
             override fun run() {

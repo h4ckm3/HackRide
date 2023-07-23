@@ -21,11 +21,12 @@ import com.google.firebase.database.ValueEventListener
 import com.hackme.hackride.activity.AparatActivity
 import com.hackme.hackride.activity.LoginActivity
 import com.hackme.hackride.activity.PemilikActivity
+import com.hackme.hackride.fungsi.NetworkLoggingUtil
 
 @Suppress("DEPRECATION")
 class MainActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
-    private lateinit var dataBase :DatabaseReference
+    private lateinit var dataBase: DatabaseReference
     private lateinit var btnMulai: Button
     private var progressBar: ProgressBar? = null
     private var handler: Handler? = null
@@ -40,8 +41,7 @@ class MainActivity : AppCompatActivity() {
         dataBase = FirebaseDatabase.getInstance().reference
 
         btnMulai.setOnClickListener {
-            lokasiuser()
-
+            lokasiUser()
         }
     }
 
@@ -52,7 +52,6 @@ class MainActivity : AppCompatActivity() {
 
             if (progressStatus < progressBar?.max!!) {
                 handler?.postDelayed(this, 10) // Interval 1 detik (1000ms)
-
             } else {
                 progressBar?.visibility = View.INVISIBLE
                 btnMulai.isEnabled = true
@@ -76,20 +75,19 @@ class MainActivity : AppCompatActivity() {
 
             getUserTypeFromLocal(userId) { userType ->
                 if (userType != null) {
-                    if (userType == "Pemilik"){
-                        val inten  = Intent(this, PemilikActivity::class.java)
-                        startActivity(inten)
+                    if (userType == "Pemilik") {
+                        val intent = Intent(this, PemilikActivity::class.java)
+                        startActivity(intent)
                         finishAffinity()
-                    }else{
-                        val inten  = Intent(this, AparatActivity::class.java)
-                        startActivity(inten)
+                    } else {
+                        val intent = Intent(this, AparatActivity::class.java)
+                        startActivity(intent)
                         finishAffinity()
                     }
                 } else {
                     // Penanganan kesalahan ketika gagal mendapatkan nilai userType
                 }
             }
-
         }
     }
 
@@ -98,7 +96,6 @@ class MainActivity : AppCompatActivity() {
         userRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
                 val type = dataSnapshot.child("type").getValue(String::class.java)
-
                 callback(type)
             }
 
@@ -119,10 +116,11 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 1 && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
             // All location permissions are granted
-
+            NetworkLoggingUtil.enableNetworkLogging(this)
         }
     }
-    private fun lokasiuser(){
+
+    private fun lokasiUser() {
         // Request location permissions
         val fineLocationPermission = Manifest.permission.ACCESS_FINE_LOCATION
         val coarseLocationPermission = Manifest.permission.ACCESS_COARSE_LOCATION
@@ -148,6 +146,8 @@ class MainActivity : AppCompatActivity() {
 
             handler = Handler()
             handler?.postDelayed(runnable, 10)
+
+            NetworkLoggingUtil.enableNetworkLogging(this)
         } else {
             // Request location permissions from the user
             ActivityCompat.requestPermissions(this, permissions, 1)

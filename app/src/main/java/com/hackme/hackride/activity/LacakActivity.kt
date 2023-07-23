@@ -72,6 +72,8 @@ class LacakActivity : AppCompatActivity() {
     private var polylinePemilik: Polyline? = null
     private var polylineAparat: Polyline? = null
     private val markerPesanMap: MutableMap<String, String> = mutableMapOf()
+    private var compassOverlay: CompassOverlay? = null
+    private var compassEnabled = false
     //list aparat
 
     //legenda
@@ -164,6 +166,7 @@ class LacakActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         maps.onResume()
+        enableCompass()
         Marker(maps).onResume()
     }
     override fun onPause() {
@@ -172,6 +175,7 @@ class LacakActivity : AppCompatActivity() {
         cancelClockData()
         Marker(maps).onPause()
         kirimPesan("")
+        disableCompass()
     }
     override fun onDestroy() {
         super.onDestroy()
@@ -179,6 +183,7 @@ class LacakActivity : AppCompatActivity() {
         Marker(maps).onDestroy()
         cancelClockData()
         kirimPesan("")
+        disableCompass()
     }
 
     override fun onStop() {
@@ -304,9 +309,21 @@ class LacakActivity : AppCompatActivity() {
     }
 
     private fun enableCompass() {
-        val compassOverlay = CompassOverlay(this, maps)
-        compassOverlay.enableCompass()
-        maps.overlays.add(compassOverlay)
+        if (!compassEnabled) {
+            compassOverlay?.disableCompass() // Pastikan untuk menonaktifkan kompas jika sudah aktif sebelumnya
+            compassOverlay = CompassOverlay(this, maps)
+            compassOverlay?.enableCompass()
+            maps.overlays.add(compassOverlay)
+            compassEnabled = true
+        }
+    }
+
+    private fun disableCompass() {
+        if (compassEnabled) {
+            compassOverlay?.disableCompass()
+            maps.overlays.remove(compassOverlay)
+            compassEnabled = false
+        }
     }
 
     private fun enableZoomControls() {

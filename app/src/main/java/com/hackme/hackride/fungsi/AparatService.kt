@@ -30,6 +30,7 @@ import com.hackme.hackride.database.UserLacak
 import java.util.Timer
 import java.util.TimerTask
 
+@Suppress("DEPRECATION")
 class AparatService : Service() {
     private lateinit var databaseRef: DatabaseReference
     private lateinit var locationManager: LocationManager
@@ -57,22 +58,8 @@ class AparatService : Service() {
         }
 
         startForeground(1, createNotification()) // Memulai foreground service dengan notifikasi
-
-        // Menghitung jumlah child pada node "motor"
-        databaseRef.child("motor").addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                val count = dataSnapshot.childrenCount
-                Log.d("ChildCount", "Jumlah child pada node motor: $count")
-
-                // Mengambil data motor untuk setiap child pada node "motor"
-                getDataMotor()
-            }
-
-            override fun onCancelled(databaseError: DatabaseError) {
-                Log.e("ChildCount", "Error: ${databaseError.message}")
-            }
-        })
-
+        // Mengambil data motor untuk setiap child pada node "motor"
+        getDataMotor()
         // Memeriksa izin lokasi dari pengguna
         if (ActivityCompat.checkSelfPermission(
                 this,
@@ -150,14 +137,14 @@ class AparatService : Service() {
                     if (motorListLaporan == null){
                         cancelNotification1()
                     }
-                        if (id_motor != null&&latitude != null && longitude != null && latitudedipakai != null && longitudedipakai != null && mesin != null && getaran != null) {
+                        if (id_motor != null&&latitude != null && longitude != null && latitudedipakai != null && longitudedipakai != null && mesin != null && getaran != null && laporan!=null) {
 
                             val jarakAman = calculateEuclideanDistance(latitude, longitude, latitudedipakai, longitudedipakai)
                             val jarakAparat = calculateEuclideanDistance(latAparat, longAparat, latitude, longitude)
                             val bulat = Math.round(jarakAparat)
                             Log.d("Data Motor", "$idMotorTerdekat - Jarak Aman: $jarakAman, Jarak Aparat: $jarakAparat")
 
-                            if (mesin == 0 && jarakAman > 50 && jarakAparat < 10000) {
+                            if (mesin == 0 && jarakAman > 50 && jarakAparat < 10000 && laporan == false) {
                                 val motor = Motor(
                                     id_motor =id_motor,
                                     latitude = latitude,
@@ -284,20 +271,8 @@ class AparatService : Service() {
                     return
                 }
                 getUserLocation()
-                databaseRef.child("motor").addListenerForSingleValueEvent(object : ValueEventListener {
-                    override fun onDataChange(dataSnapshot: DataSnapshot) {
-                        val count = dataSnapshot.childrenCount
-                        Log.d("ChildCount", "Jumlah child pada node motor: $count")
-
-                        // Mengambil data motor untuk setiap child pada node "motor"
-                        getDataMotor()
-                    }
-
-                    override fun onCancelled(databaseError: DatabaseError) {
-                        Log.e("ChildCount", "Error: ${databaseError.message}")
-                    }
-                })
-
+                // Mengambil data motor untuk setiap child pada node "motor"
+                getDataMotor()
             }
         }
         timerData?.schedule(timerTask, 0, 1000)

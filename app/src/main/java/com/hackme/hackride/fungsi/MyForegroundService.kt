@@ -133,8 +133,9 @@ class MyForegroundService : Service() {
 
     private fun getDataMotor(id_motor: String) {
         val motorRef = database.child("motor").child(id_motor)
-        motorRef.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
+        motorRef.get().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val dataSnapshot = task.result
                 if (dataSnapshot.exists()) {
                     val latitude = dataSnapshot.child("latitude").getValue(Double::class.java)
                     val longitude = dataSnapshot.child("longitude").getValue(Double::class.java)
@@ -143,7 +144,7 @@ class MyForegroundService : Service() {
                     val latitudedipakai = dataSnapshot.child("latitudedipakai").getValue(Double::class.java)
                     val longitudedipakai = dataSnapshot.child("longitudedipakai").getValue(Double::class.java)
 
-                    if (latitude != null && longitude != null && latitudedipakai != null && longitudedipakai != null && mesin != null&& getaran != null) {
+                    if (latitude != null && longitude != null && latitudedipakai != null && longitudedipakai != null && mesin != null && getaran != null) {
                         Log.d("Data Motor", "Latitude: $latitude, Longitude: $longitude, Mesin: $mesin, Latitude Parkir: $latitudedipakai, Longitude Parkir: $longitudedipakai")
                         latitudeMotor = latitude
                         longitudeMotor = longitude
@@ -151,22 +152,23 @@ class MyForegroundService : Service() {
                         longParkir = longitudedipakai
                         getaranMotor = getaran
                         inMesin = mesin
-                        if (mesin == 0){
+                        if (mesin == 0) {
                             mesinMotor = "nonActive"
-                        }else{
-                            mesinMotor ="Active"
+                        } else {
+                            mesinMotor = "Active"
                         }
                     }
                 } else {
                     // Data motor dengan id_motor tersebut tidak ditemukan
                 }
-            }
-
-            override fun onCancelled(error: DatabaseError) {
+            } else {
                 // Handle error jika gagal mengambil data dari Firebase
+                val error = task.exception
+                // ...
             }
-        })
+        }
     }
+
 
     private fun startLocationComparison() {
         timerServis = Timer()

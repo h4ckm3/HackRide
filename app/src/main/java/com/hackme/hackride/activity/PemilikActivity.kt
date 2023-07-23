@@ -106,6 +106,9 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
     private lateinit var btnLacakInfolacak :Button
     private lateinit var btnStopInfolacak : Button
 
+    private var compassOverlay: CompassOverlay? = null
+    private var compassEnabled = false
+
 
 
 
@@ -243,6 +246,8 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         }
         //tombol notifikasi kemalingan
         btnLacakNotifKemalingan.setOnClickListener {
+            val userLocationRef = database.child("motor").child(ID_Motor)
+            userLocationRef.child("laporan").setValue(true)
             val intent = Intent(this,LacakActivity::class.java)
             startActivity(intent)
             finishAffinity()
@@ -343,6 +348,7 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
         super.onResume()
         setupMapWithLocation()
         // Resume the map view when the activity is resumed
+        enableCompass()
         mapView.onResume()
         motorMarker?.onResume()
     }
@@ -353,24 +359,30 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
 //        mapView.onPause()
 //        motorMarker?.onPause()
 //        marker?.onPause()
+        disableCompass()
         cancelClock()
+        finishAffinity()
     }
     override fun onStop() {
         super.onStop()
 //        locationManager.removeUpdates(this)
         cancelClock()
+        disableCompass()
+        finishAffinity()
     }
 
 // atau
 
     override fun onDestroy() {
         super.onDestroy()
+        disableCompass()
 //        locationManager.removeUpdates(this)
         mapView.onPause()
         motorMarker?.onDestroy()
         marker?.onDestroy()
         cancelClock()
         Intent(this, PemilikActivity::class.java).flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
+        finishAffinity()
     }
 
 
@@ -559,9 +571,21 @@ class PemilikActivity : AppCompatActivity(), LocationListener {
 
 
     private fun enableCompass() {
-        val compassOverlay = CompassOverlay(this, mapView)
-        compassOverlay.enableCompass()
-        mapView.overlays.add(compassOverlay)
+        if (!compassEnabled) {
+            compassOverlay?.disableCompass() // Pastikan untuk menonaktifkan kompas jika sudah aktif sebelumnya
+            compassOverlay = CompassOverlay(this, mapView)
+            compassOverlay?.enableCompass()
+            mapView.overlays.add(compassOverlay)
+            compassEnabled = true
+        }
+    }
+
+    private fun disableCompass() {
+        if (compassEnabled) {
+            compassOverlay?.disableCompass()
+            mapView.overlays.remove(compassOverlay)
+            compassEnabled = false
+        }
     }
     private fun enableZoomControls() {
         mapView.setBuiltInZoomControls(true)

@@ -21,82 +21,6 @@
             android:layout_marginHorizontal="10dp"
             app:cardCornerRadius="50dp"
             app:contentPadding="2dp">
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-                <!--Tombol-->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="horizontal"
-                    android:gravity="center">
-                    <!--tombol home-->
-                    <androidx.cardview.widget.CardView
-                        android:id="@+id/cv_btnhome"
-                        android:layout_width="50dp"
-                        android:layout_height="50dp"
-                        app:cardCornerRadius="50dp"
-                        app:contentPadding="2dp"
-                        android:padding="2dp"
-                        app:cardBackgroundColor="@color/white"
-                        android:layout_marginHorizontal="10dp">
-                        <ImageView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:src="@drawable/ic_menu"/>
-                    </androidx.cardview.widget.CardView>
-
-                    <!--tombol info-->
-                    <androidx.cardview.widget.CardView
-                        android:id="@+id/cv_btnabout"
-                        android:layout_width="50dp"
-                        android:layout_height="50dp"
-                        app:cardCornerRadius="50dp"
-                        app:contentPadding="2dp"
-                        android:padding="2dp"
-                        app:cardBackgroundColor="@color/white"
-                        android:layout_marginHorizontal="10dp">
-                        <ImageView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:src="@drawable/ic_informasi"/>
-                    </androidx.cardview.widget.CardView>
-
-                    <!--tombol help-->
-                    <androidx.cardview.widget.CardView
-                        android:id="@+id/cv_btnhelp"
-                        android:layout_width="50dp"
-                        android:layout_height="50dp"
-                        app:cardCornerRadius="50dp"
-                        app:contentPadding="2dp"
-                        android:padding="2dp"
-                        app:cardBackgroundColor="@color/white"
-                        android:layout_marginHorizontal="10dp">
-                        <ImageView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:src="@drawable/ic_bantuan"/>
-                    </androidx.cardview.widget.CardView>
-
-                    <!--tombol logout-->
-                    <androidx.cardview.widget.CardView
-                        android:id="@+id/cv_btnlogout"
-                        android:layout_width="50dp"
-                        android:layout_height="50dp"
-                        app:cardCornerRadius="50dp"
-                        app:contentPadding="2dp"
-                        android:padding="2dp"
-                        app:cardBackgroundColor="@color/white"
-                        android:layout_marginHorizontal="10dp">
-                        <ImageView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:src="@drawable/icon_logout" />
-                    </androidx.cardview.widget.CardView>
-
-                </LinearLayout>
-
-            </RelativeLayout>
 
         </androidx.cardview.widget.CardView>
         <!--konten-->
@@ -211,63 +135,167 @@
 
 
         <!--Keterangan Tombol-->
-
-        <!--ket home-->
         <androidx.cardview.widget.CardView
-            android:id="@+id/cv_kethome"
-            android:layout_width="50dp"
-            android:layout_height="20dp"
-            android:layout_above="@+id/cv_konten"
-            app:layout_constraintTop_toBottomOf="@+id/cv_btnhome"
-            android:layout_alignParentEnd="true"
-            android:layout_marginEnd="260dp"
-            android:layout_marginBottom="5dp"
-            app:cardBackgroundColor="@color/colorAccent"
+            app:cardBackgroundColor="#00000000"
+            android:layout_width="match_parent"
+            android:layout_height="75dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginHorizontal="10dp"
             app:cardCornerRadius="50dp"
-            tools:ignore="NotSibling">
+            app:contentPadding="2dp">
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+                <!--Tombol-->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+                    <!--tombol home-->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal">
+                        <androidx.cardview.widget.CardView
+                            android:id="@+id/cv_btnhome"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            app:cardCornerRadius="50dp"
+                            app:contentPadding="2dp"
+                            android:padding="2dp"
+                            app:cardBackgroundColor="@color/white"
+                            android:layout_marginHorizontal="10dp">
+                            <ImageView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:src="@drawable/ic_menu"/>
+                        </androidx.cardview.widget.CardView>
+                        <!--ket home-->
+                        <androidx.cardview.widget.CardView
+                            android:id="@+id/cv_kethome"
+                            android:layout_width="50dp"
+                            android:layout_height="20dp"
+                            android:layout_above="@+id/cv_konten"
+                            android:layout_alignParentEnd="true"
+                            android:layout_marginBottom="5dp"
+                            app:cardBackgroundColor="#00BCD4"
+                            app:cardCornerRadius="50dp"
+                            tools:ignore="NotSibling"
+                            app:layout_constraintTop_toTopOf="@id/cv_btnhome"
+                            app:layout_constraintEnd_toEndOf="@id/cv_btnhome">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="Home"
-                android:textColor="@color/black" />
-        </androidx.cardview.widget.CardView>
-        <!--ket about-->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/cv_ketabout"
-            android:layout_width="50dp"
-            android:layout_height="20dp"
-            android:layout_above="@+id/cv_konten"
-            android:layout_alignParentEnd="true"
-            android:layout_marginEnd="190dp"
-            android:layout_marginBottom="5dp"
-            app:cardBackgroundColor="@color/colorAccent"
-            app:cardCornerRadius="50dp">
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="About"
-                android:textColor="@color/black"/>
-        </androidx.cardview.widget.CardView>
-        <!--ket help-->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/cv_kethelp"
-            android:layout_width="50dp"
-            android:layout_height="20dp"
-            android:layout_above="@+id/cv_konten"
-            android:layout_alignParentEnd="true"
-            android:layout_marginEnd="120dp"
-            android:layout_marginBottom="5dp"
-            app:cardBackgroundColor="@color/colorAccent"
-            app:cardCornerRadius="50dp">
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="Help"
-                android:textColor="@color/black"/>
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="Home"
+                                android:textColor="@color/black" />
+                        </androidx.cardview.widget.CardView>
+                    </LinearLayout>
+
+                    <!--tombol info-->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                       android:gravity="center_horizontal">
+                        <androidx.cardview.widget.CardView
+                            android:id="@+id/cv_btnabout"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            app:cardCornerRadius="50dp"
+                            app:contentPadding="2dp"
+                            android:padding="2dp"
+                            app:cardBackgroundColor="@color/white"
+                            android:layout_marginHorizontal="10dp">
+                            <ImageView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:src="@drawable/ic_informasi"/>
+                        </androidx.cardview.widget.CardView>
+                        <!--ket about-->
+                        <androidx.cardview.widget.CardView
+                            android:id="@+id/cv_ketabout"
+                            android:layout_width="50dp"
+                            android:layout_height="20dp"
+                            android:layout_above="@+id/cv_konten"
+                            android:layout_marginBottom="5dp"
+                            app:cardBackgroundColor="@color/colorAccent"
+                            app:cardCornerRadius="50dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="About"
+                                android:textColor="@color/black"/>
+                        </androidx.cardview.widget.CardView>
+
+                    </LinearLayout>
+
+                    <!--tombol help-->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical">
+                        <androidx.cardview.widget.CardView
+                            android:id="@+id/cv_btnhelp"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            app:cardCornerRadius="50dp"
+                            app:contentPadding="2dp"
+                            android:padding="2dp"
+                            app:cardBackgroundColor="@color/white"
+                            android:layout_marginHorizontal="10dp">
+                            <ImageView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:src="@drawable/ic_bantuan"/>
+                        </androidx.cardview.widget.CardView>
+                        <!--ket help-->
+                        <androidx.cardview.widget.CardView
+                            android:id="@+id/cv_kethelp"
+                            android:layout_width="50dp"
+                            android:layout_height="20dp"
+                            android:layout_above="@+id/cv_konten"
+                            android:layout_marginBottom="5dp"
+                            app:cardBackgroundColor="@color/colorAccent"
+                            app:cardCornerRadius="50dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="Help"
+                                android:textColor="@color/black"/>
+                        </androidx.cardview.widget.CardView>
+                    </LinearLayout>
+
+                    <!--tombol logout-->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent">
+                        <androidx.cardview.widget.CardView
+                            android:id="@+id/cv_btnlogout"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            app:cardCornerRadius="50dp"
+                            app:contentPadding="2dp"
+                            android:padding="2dp"
+                            app:cardBackgroundColor="@color/white"
+                            android:layout_marginHorizontal="10dp">
+                            <ImageView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:src="@drawable/icon_logout" />
+                        </androidx.cardview.widget.CardView>
+                    </LinearLayout>
+                </LinearLayout>
+
+            </RelativeLayout>
+
+
         </androidx.cardview.widget.CardView>
         <!-- notifikasi Kemalingan-->
         <androidx.cardview.widget.CardView

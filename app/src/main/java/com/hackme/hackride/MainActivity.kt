@@ -124,7 +124,8 @@ class MainActivity : AppCompatActivity() {
         // Request location permissions
         val fineLocationPermission = Manifest.permission.ACCESS_FINE_LOCATION
         val coarseLocationPermission = Manifest.permission.ACCESS_COARSE_LOCATION
-        val backgroundLocationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        val postNotifikasi = Manifest.permission.POST_NOTIFICATIONS
+        val backgroundLocationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             Manifest.permission.ACCESS_BACKGROUND_LOCATION
         } else {
             fineLocationPermission
@@ -132,6 +133,7 @@ class MainActivity : AppCompatActivity() {
         val permissions = arrayOf(
             fineLocationPermission,
             coarseLocationPermission,
+            postNotifikasi,
             backgroundLocationPermission
         )
         val grantedPermissions = permissions.filter {
